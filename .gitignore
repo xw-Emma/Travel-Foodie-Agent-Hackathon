@@ -1,0 +1,13 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+data/foodie.sqlite
+data/api_cache.sqlite
+.streamlit/
+*.log
+.idea/
+.vscode/

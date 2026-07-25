@@ -1,0 +1,6 @@
+# Core kit runs on the Python standard library alone.
+# Verify optional packages on a TELUS laptop during M0.
+
+streamlit>=1.36,<2.0     # optional Tier 2 UI (CLI is the safe fallback)
+pandas>=2.0,<3.0         # optional data staging / EDA
+# openai>=1.40,<2.0      # optional SDK; uncomment ONLY after M0 confirms install

@@ -1,0 +1,61 @@
+venue_id,name,neighbourhood,lat,lon,cuisine,meal_types,price_band,cost_per_person,closed_days,open_time,close_time,allergens_present,dietary_options,rating,is_trap,description
+r001,Bow Valley Breakfast Co,Downtown Core,51.0455,-114.0631,canadian,breakfast,$,16,,06:30,14:00,gluten;dairy;egg,vegetarian;gluten_free,4.3,,Classic all-day breakfast with river views and bottomless drip coffee.
+r002,Stephen Avenue Deli,Downtown Core,51.0448,-114.0658,sandwiches,breakfast;lunch,$,15,sat;sun,07:00,16:00,gluten;dairy;sesame,vegetarian,4.1,,Counter-service deli favoured by the downtown office crowd.
+r003,Ember & Oak Steakhouse,Downtown Core,51.0462,-114.0645,steakhouse,dinner,$$$$,118,,17:00,23:00,dairy;gluten,gluten_free,4.7,budget_buster,White-tablecloth Alberta beef with a deep Okanagan wine list.
+r004,Chinook Noodle House,Chinatown,51.0492,-114.0608,chinese,lunch;dinner,$,18,,11:00,21:30,gluten;soy;sesame;shellfish,vegetarian,4.4,,Hand-pulled noodles and dumplings in a bustling storefront.
+r005,Jade Lantern Dim Sum,Chinatown,51.0488,-114.0615,chinese,breakfast;lunch,$$,26,mon,09:00,15:00,gluten;soy;shellfish;sesame,vegetarian,4.5,closed_monday,Weekend-style dim sum carts served every day the doors are open.
+r006,Bridgeland Bakehouse,Bridgeland,51.0524,-114.0432,bakery,breakfast,$,12,mon,07:00,15:00,gluten;dairy;egg;tree_nut,vegetarian,4.6,,Sourdough loaves and laminated pastries that sell out by noon.
+r007,Sunnyside Pho,Kensington,51.0531,-114.0862,vietnamese,lunch;dinner,$,17,,11:00,21:00,soy;fish;gluten,vegetarian;gluten_free,4.4,,Twelve-hour beef broth and rice-paper rolls in a narrow room.
+r008,Peanut Garden Thai,Beltline,51.0381,-114.0752,thai,lunch;dinner,$$,29,,11:30,22:00,peanut;tree_nut;shellfish;fish;soy,vegetarian,4.5,peanut_risk,Northern Thai cooking built around fresh peanut and cashew relishes.
+r009,Mission Trattoria,Mission,51.0334,-114.0702,italian,dinner,$$$,58,,17:00,22:30,gluten;dairy;egg,vegetarian,4.6,,Hand-rolled pasta and a wood oven in a converted heritage house.
+r010,Inglewood Smokehouse,Inglewood,51.0412,-114.0325,bbq,lunch;dinner,$$,34,mon;tue,11:30,21:00,gluten;soy;dairy,gluten_free,4.5,,Alberta brisket smoked over birch, served by the pound until sold out.
+r011,Elbow River Cafe,Mission,51.0328,-114.0688,cafe,breakfast;lunch,$,14,,07:00,17:00,gluten;dairy;tree_nut,vegetarian;vegan,4.2,,Neighbourhood cafe with house granola and a sunny patio.
+r012,East Village Ramen Bar,East Village,51.0461,-114.0428,japanese,lunch;dinner,$$,24,,11:30,22:00,gluten;soy;egg;sesame,vegetarian,4.6,,Tonkotsu and shoyu bowls with an open kitchen counter.
+r013,Prairie Harvest Kitchen,Downtown Core,51.0441,-114.0672,canadian,lunch;dinner,$$$,64,sun,11:30,22:00,dairy;gluten,gluten_free,4.7,,Farm-to-table menu that changes with the Alberta growing season.
+r014,Little Havana Cafe,Beltline,51.0392,-114.0768,latin,breakfast;lunch,$,15,,08:00,16:00,dairy;gluten;egg,vegetarian,4.3,,Cuban coffee, pressed sandwiches and a very loud espresso machine.
+r015,Kensington Curry House,Kensington,51.0538,-114.0871,indian,lunch;dinner,$$,27,,11:30,22:00,dairy;tree_nut;gluten,vegetarian;vegan;halal,4.5,,Punjabi curries with a tandoor working through the dinner rush.
+r016,Seventeenth Ave Tapas,17th Ave SW,51.0372,-114.0854,spanish,dinner,$$$,52,mon,16:00,23:30,shellfish;gluten;dairy;egg,vegetarian,4.4,,Small plates and sherry, best occupied for a long evening.
+r017,Riverfront Sushi,Eau Claire,51.0518,-114.0704,japanese,lunch;dinner,$$$,61,,11:30,22:00,fish;shellfish;soy;sesame,gluten_free,4.6,,Nigiri counter with daily flights from the coast.
+r018,Bow Bagel Works,Kensington,51.0526,-114.0854,bakery,breakfast,$,11,,06:30,14:00,gluten;sesame;egg,vegetarian;vegan,4.4,,Kettle-boiled bagels and schmear, cash-friendly and quick.
+r019,Marda Loop Bistro,Marda Loop,51.0175,-114.0952,french,brunch;dinner,$$$,57,mon;tue,10:00,22:00,dairy;gluten;egg,vegetarian,4.5,,Bistro classics and a weekend brunch worth the queue.
+r020,Blue Rock Taqueria,Inglewood,51.0404,-114.0338,mexican,lunch;dinner,$,16,,11:00,21:00,gluten;dairy,vegetarian;vegan;gluten_free,4.5,,Nixtamal tortillas pressed to order, salsas lined up on the counter.
+r021,Glacier Ice Cream Bar,Beltline,51.0386,-114.0741,dessert,dessert,$,9,,12:00,22:00,dairy;egg;tree_nut;soy,vegetarian,4.7,,Small-batch scoops with a rotating dairy-free flight.
+r022,Fort Calgary Chophouse,East Village,51.0448,-114.0401,steakhouse,dinner,$$$,72,sun,17:00,22:30,dairy;gluten,gluten_free,4.4,,Grill room in a restored warehouse with a long bar.
+r023,Nose Hill Noodle Bar,Downtown Core,51.0470,-114.0668,korean,lunch;dinner,$$,23,,11:30,21:30,soy;sesame;gluten;egg,vegetarian,4.3,,Kimchi stews and bibimbap in a bright fast-casual room.
+r024,Bankview Bistro,Beltline,51.0362,-114.0862,french,dinner,$$$,66,mon,17:00,22:00,dairy;gluten;egg;shellfish,,4.6,,Twelve tables, one chalkboard menu, reservations essential.
+r025,Sunalta Shawarma,Beltline,51.0398,-114.0908,middle_eastern,lunch;dinner,$,14,,11:00,23:00,sesame;gluten;dairy,vegetarian;vegan;halal,4.5,,Spit-roasted chicken and garlic sauce, open late for the walk home.
+r026,Heritage Pierogi Hall,Inglewood,51.0418,-114.0312,eastern_european,lunch;dinner,$,19,mon;tue,11:00,20:00,gluten;dairy;egg,vegetarian,4.2,,Hand-pinched pierogi by the dozen in a community hall setting.
+r027,Cliff Bungalow Cafe,Mission,51.0341,-114.0724,cafe,breakfast;lunch,$,13,,07:30,16:00,gluten;dairy;tree_nut;soy,vegetarian;vegan;gluten_free,4.4,,Bright corner cafe with strong oat-milk game and a quiet loft.
+r028,Bow Fish Market Grill,Eau Claire,51.0512,-114.0688,seafood,lunch;dinner,$$$,68,mon,11:30,22:00,fish;shellfish;dairy;gluten,gluten_free,4.5,,Market-counter seafood grilled simply, priced by the day's catch.
+r029,Tuscany Pizza Forno,Kensington,51.0544,-114.0888,italian,lunch;dinner,$$,25,,11:30,22:00,gluten;dairy,vegetarian,4.4,,Neapolitan pies from a domed oven, ninety seconds a pizza.
+r030,Ethiopian Coffee House,Beltline,51.0374,-114.0781,ethiopian,lunch;dinner,$,18,sun,11:00,21:00,gluten;dairy;tree_nut,vegetarian;vegan,4.6,,Injera platters for sharing and a full coffee ceremony on request.
+r031,Prince's Island Picnic Co,Eau Claire,51.0538,-114.0721,cafe,breakfast;lunch,$,15,,08:00,17:00,gluten;dairy;egg;tree_nut,vegetarian;vegan,4.3,,Boxed picnic lunches assembled for the park across the bridge.
+r032,Sandstone Diner,Downtown Core,51.0435,-114.0619,canadian,breakfast;lunch,$,17,,06:00,15:00,gluten;dairy;egg;soy,vegetarian,4.0,,Chrome-stool diner running the same hash browns since 1974.
+r033,Beltline Bao House,Beltline,51.0389,-114.0759,chinese,lunch;dinner,$,16,,11:00,21:00,gluten;soy;sesame;egg,vegetarian,4.4,,Steamed bao and cold noodles, counter seating only.
+r034,Ramsay Rooftop Grill,Inglewood,51.0388,-114.0341,mediterranean,dinner,$$$,59,mon,16:30,23:00,dairy;gluten;fish;sesame,vegetarian;gluten_free,4.5,,Rooftop charcoal grill with a skyline view and a long sunset service.
+r035,Hillhurst Brunch Club,Kensington,51.0549,-114.0845,brunch,breakfast;brunch,$$,28,mon;tue,08:00,15:00,gluten;dairy;egg,vegetarian;gluten_free,4.6,,Weekend-style brunch on weekdays, with a serious hollandaise.
+r036,Victoria Park Vegan,Beltline,51.0405,-114.0632,vegetarian,lunch;dinner,$$,26,,11:00,21:00,tree_nut;soy;gluten;sesame,vegetarian;vegan,4.5,,Entirely plant-based menu that converts sceptics with the mushroom plate.
+r037,Crescent Heights Grill,Bridgeland,51.0561,-114.0668,canadian,dinner,$$,38,,17:00,22:00,dairy;gluten,gluten_free,4.3,,Neighbourhood grill with a view back over the downtown towers.
+r038,Bridgeland Osteria,Bridgeland,51.0518,-114.0448,italian,dinner,$$$,54,sun;mon,17:00,22:00,gluten;dairy;egg;shellfish,vegetarian,4.7,,Twelve-seat osteria with a nightly pasta and no substitutions.
+r039,Chinook Dumpling Bar,Chinatown,51.0485,-114.0622,chinese,lunch;dinner,$,15,,11:00,21:00,gluten;soy;sesame;shellfish,vegetarian,4.3,,Pan-fried dumplings by the dozen with chili oil made in house.
+r040,Barley Mill Pub,Eau Claire,51.0521,-114.0672,pub,lunch;dinner,$$,31,,11:00,00:00,gluten;dairy;fish,vegetarian,4.1,,Timber-beamed pub with Alberta taps and a fireplace that earns its keep.
+r041,Mission Bridge Kitchen,Mission,51.0318,-114.0695,canadian,brunch;dinner,$$,36,,10:00,22:00,dairy;gluten;egg,vegetarian;gluten_free,4.4,,Seasonal plates beside the Elbow River footbridge.
+r042,Kensington Kebab,Kensington,51.0533,-114.0879,middle_eastern,lunch;dinner,$,15,,11:00,22:00,sesame;gluten;dairy;tree_nut,vegetarian;halal,4.2,,Charcoal skewers and saffron rice, family-run for two decades.
+r043,Downtown Poke Counter,Downtown Core,51.0452,-114.0684,hawaiian,lunch,$,17,sat;sun,10:30,15:00,fish;soy;sesame;shellfish,gluten_free,4.2,,Build-your-own poke bowls aimed squarely at the lunch hour.
+r044,Inglewood Coffee Roasters,Inglewood,51.0409,-114.0351,cafe,breakfast,$,10,,07:00,17:00,dairy;gluten;tree_nut;soy,vegetarian;vegan,4.7,,Roastery cafe where the beans are turned in the back room.
+r045,Stampede Smash Burger,Beltline,51.0355,-114.0578,burgers,lunch;dinner,$,14,,11:00,22:00,gluten;dairy;egg;sesame,vegetarian,4.4,,Griddled smash patties and a very short menu.
+r046,Elbow Park Tea Room,Mission,51.0301,-114.0762,cafe,breakfast;lunch,$$,22,mon,09:00,17:00,gluten;dairy;egg;tree_nut,vegetarian,4.3,,Afternoon tea service with scones baked to order.
+r047,East Village Oyster Bar,East Village,51.0455,-114.0412,seafood,dinner,$$$,74,mon,16:00,23:00,shellfish;fish;dairy;gluten,gluten_free,4.6,,Raw bar with a rotating oyster list and a very cold martini.
+r048,Bow Trail Bibimbap,Downtown Core,51.0428,-114.0701,korean,lunch,$,15,sat;sun,11:00,15:00,soy;sesame;egg;gluten,vegetarian;vegan,4.2,,Stone-bowl lunches served fast to the office towers nearby.
+r049,Mount Royal Fine Dining,Mission,51.0311,-114.0741,french,dinner,$$$$,132,sun;mon,18:00,22:00,dairy;gluten;egg;shellfish;tree_nut,,4.8,budget_buster,Nine-course tasting menu with wine pairing; book six weeks out.
+r050,Beltline Breakfast Bar,Beltline,51.0378,-114.0723,breakfast,breakfast,$,13,,06:30,13:00,gluten;dairy;egg,vegetarian;gluten_free,4.3,,Early-opening breakfast counter for the pre-work crowd.
+r051,Chinatown Hotpot,Chinatown,51.0496,-114.0601,chinese,dinner,$$,33,,16:00,23:00,shellfish;soy;sesame;gluten;fish,vegetarian,4.5,,Individual induction hotpots with a thirty-item broth bar.
+r052,Kensington Creperie,Kensington,51.0541,-114.0866,french,breakfast;brunch,$,16,mon,08:00,15:00,gluten;dairy;egg,vegetarian,4.4,,Sweet and savoury crepes cooked on two spinning griddles.
+r053,Inglewood Wine Bar,Inglewood,51.0415,-114.0319,mediterranean,dinner,$$$,56,sun;mon,16:00,23:00,dairy;gluten;fish;tree_nut,vegetarian,4.6,,Natural wine list with a snack menu built to match it.
+r054,Bridgeland Bento,Bridgeland,51.0529,-114.0441,japanese,lunch,$,16,sun,11:00,15:00,soy;fish;sesame;egg;gluten,vegetarian,4.3,,Bento boxes packed to order, gone by one o'clock.
+r055,Downtown Falafel Cart,Downtown Core,51.0443,-114.0648,middle_eastern,lunch,$,11,sat;sun,10:30,15:00,sesame;gluten,vegetarian;vegan;halal,4.5,,Fixed-location street cart with a line that moves quickly.
+r056,Eau Claire Seafood Shack,Eau Claire,51.0527,-114.0695,seafood,lunch;dinner,$$,35,,11:30,21:00,fish;shellfish;gluten;dairy,gluten_free,4.2,,Fish and chips and chowder, paper-lined baskets, patio in summer.
+r057,17th Ave Gastropub,17th Ave SW,51.0369,-114.0871,pub,lunch;dinner,$$,32,,11:00,00:00,gluten;dairy;fish;soy,vegetarian,4.3,,Long bar, short kitchen menu, reliably open when nothing else is.
+r058,Mission Momo House,Mission,51.0337,-114.0713,nepalese,lunch;dinner,$,17,mon,11:30,21:00,gluten;soy;sesame,vegetarian;halal,4.5,,Steamed and fried momo with a fiercely good tomato achar.
+r059,Beltline Bakery & Coffee,Beltline,51.0384,-114.0733,bakery,breakfast,$,10,,06:30,16:00,gluten;dairy;egg;tree_nut;soy,vegetarian,4.4,,Morning buns and single-origin filter, standing room mostly.
+r060,Stephen Avenue Grill,Downtown Core,51.0447,-114.0641,canadian,lunch;dinner,$$,37,sun,11:00,22:00,dairy;gluten;fish,vegetarian;gluten_free,4.2,,Patio dining on the pedestrian mall through the summer months.
