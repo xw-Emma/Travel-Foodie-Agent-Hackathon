@@ -56,6 +56,7 @@ class FuelixClient:
             self.base_url + "/chat/completions",
             data=json.dumps(payload).encode("utf-8"), method="POST",
             headers={"Authorization": f"Bearer {self.api_key}",
+                     "User-Agent": "foodie-agent-kit/1.0",
                      "Content-Type": "application/json"})
 
         last_err = None
