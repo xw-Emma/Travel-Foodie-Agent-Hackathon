@@ -9,10 +9,12 @@ DATA MODE: FOODIE_DATA_BACKEND=auto|live|local (see src/config.py).
 """
 from __future__ import annotations
 
+import json
 import time
 
 from . import config
-from .state import TripState, MEALS, is_valid_slot
+from .fuelix_client import FuelixClient, parse_json_reply, run_tool_loop
+from .state import TripState, MEALS, TOOL_SCHEMAS, is_valid_slot, slot_ids
 from .tools import (TOOL_IMPLS, search_restaurants, get_venue_details,
                     search_attractions, estimate_travel, check_budget,
                     last_backend_report)
@@ -26,6 +28,237 @@ def validate_critic_output(critic_json: dict, days: int = 2) -> tuple[bool, list
     return (len(bad) == 0, bad)
 
 
+def _budget_per_person(request: dict, days: int) -> float:
+    party_size = max(1, int(request.get("party_size", 1)))
+    return float(request["budget_total"]) / days / len(MEALS) / party_size
+
+
+def _plan_with_llm(client: FuelixClient, request: dict) -> dict:
+    days = int(request.get("days", 2))
+    valid_slots = slot_ids(days, attractions_per_day=0)
+    system = (config.PROMPTS_DIR / "planner.md").read_text(encoding="utf-8")
+    user = (
+        "Split this request into exactly one restaurant task for every valid slot. "
+        "Return STRICT JSON only. Do not select or name any venue.\n"
+        f"Valid slot IDs (use these EXACTLY): {valid_slots}\n"
+        f"Request: {json.dumps(request, sort_keys=True)}\n"
+        "Each task must contain: agent='restaurant', slot, meal, area_hint, "
+        "budget_per_person, and constraints with allergies and cuisines. "
+        "Schema: {\"days\": int, \"meals_per_day\": 3, "
+        "\"budget_allocation\": {}, \"tasks\": [], \"constraints\": {}}"
+    )
+    message = client.chat(
+        model=config.MODEL_ROUTING["planner"], system=system, user=user,
+        temperature=0.1, max_tokens=2200)
+    plan = parse_json_reply(message.get("content", ""))
+    tasks = plan.get("tasks") or []
+    normalized = []
+    for task in tasks:
+        slot = str(task.get("slot", ""))
+        if slot not in valid_slots:
+            day = task.get("day")
+            meal = task.get("meal")
+            if day and meal:
+                slot = f"day{int(day)}.{meal}"
+        if slot not in valid_slots:
+            continue
+        normalized.append({
+            "agent": "restaurant",
+            "slot": slot,
+            "meal": task.get("meal") or slot.rsplit(".", 1)[1],
+            "area_hint": task.get("area_hint") or "",
+            "budget_per_person": float(
+                task.get("budget_per_person", _budget_per_person(request, days))),
+            "constraints": {
+                "allergies": request.get("allergies", []),
+                "cuisines": request.get("cuisines", []),
+            },
+        })
+    by_slot = {task["slot"]: task for task in normalized}
+    if set(by_slot) != set(valid_slots):
+        missing = sorted(set(valid_slots) - set(by_slot))
+        raise ValueError(f"Planner did not provide every valid slot: {missing}")
+    plan["tasks"] = [by_slot[slot] for slot in valid_slots]
+    plan["days"] = days
+    return plan
+
+
+def _max_price_level(budget_per_person: float) -> int:
+    if budget_per_person < 45:
+        return 2
+    if budget_per_person < 70:
+        return 3
+    return 4
+
+
+def _pick_restaurant_with_tool_loop(
+    client: FuelixClient, task: dict, request: dict, used_venue_ids: set[str]
+) -> tuple[dict, list[dict]]:
+    allergies = task["constraints"].get("allergies", [])
+    exclude = [f"{allergy}_risk" for allergy in allergies]
+    cuisines = task["constraints"].get("cuisines") or []
+    cuisine = cuisines[0] if cuisines else None
+    observed_candidates: list[dict] = []
+    tool_impls = dict(TOOL_IMPLS)
+
+    def search_for_task(**kwargs):
+        kwargs.update({
+            "city": request["city"],
+            "meal": task["meal"],
+            "area": task.get("area_hint") or None,
+            "cuisine": cuisine,
+            "price_level_max": _max_price_level(task["budget_per_person"]),
+            "exclude_flags": exclude,
+            "limit": max(int(kwargs.get("limit") or 0), 8),
+        })
+        rows = search_restaurants(**kwargs)
+        observed_candidates.extend(rows)
+        return rows
+
+    tool_impls["search_restaurants"] = search_for_task
+
+    system = (config.PROMPTS_DIR / "restaurant.md").read_text(encoding="utf-8")
+    user = (
+        f"City: {request['city']}. Slot: {task['slot']} ({task['meal']}).\n"
+        f"Budget per person: ${task['budget_per_person']:.2f}.\n"
+        f"Cuisine: {cuisine or 'any'}. Allergies: {allergies}.\n"
+        "Call search_restaurants with these constraints, then choose ONE venue "
+        "from the tool response. Return STRICT JSON as an array with exactly one "
+        "object: [{\"venue_id\": str, \"name\": str, \"why_recommended\": str}]. "
+        "Never invent a venue or facts. Call search_restaurants exactly once; "
+        "do not call any other tool in this Tier 1 task."
+    )
+    result = run_tool_loop(
+        client, config.MODEL_ROUTING["restaurant"], system, user,
+        tools=TOOL_SCHEMAS, tool_impls=tool_impls, max_rounds=3)
+    candidates = observed_candidates
+    if not candidates and task.get("area_hint"):
+        candidates = search_restaurants(
+            city=request["city"], meal=task["meal"], area=None,
+            cuisine=cuisine, price_level_max=_max_price_level(task["budget_per_person"]),
+            exclude_flags=exclude, limit=20)
+    available = [item for item in candidates
+                 if item["venue_id"] not in used_venue_ids]
+    if not available:
+        raise ValueError(f"No unused candidates for {task['slot']}")
+    selections = result if isinstance(result, list) else [result]
+    selection = selections[0] if selections else {}
+    candidate_by_id = {item["venue_id"]: item for item in available}
+    selected = candidate_by_id.get(selection.get("venue_id"))
+    if selected is None:
+        selected = available[0]
+        why = "Selected from the verified tool results after an off-list model response."
+    else:
+        why = selection.get("why_recommended") or selection.get("why") or (
+            f"Selected by the restaurant executor from verified {selected['cuisine']} results."
+        )
+    return {**selected, "why": why}, candidates
+
+
+def _format_with_llm(client: FuelixClient, st: TripState) -> str:
+    system = (config.PROMPTS_DIR / "formatter.md").read_text(encoding="utf-8")
+    user = (
+        "Compose the final itinerary from this verified state. Do not add, remove, "
+        "or alter venues, costs, constraints, or facts. Return concise printable text.\n"
+        f"{json.dumps({'plan': st.plan, 'itinerary': st.itinerary, 'budget': st.budget}, default=str)}"
+    )
+    message = client.chat(
+        model=config.MODEL_ROUTING["formatter"], system=system, user=user,
+        temperature=0.2, max_tokens=1600)
+    return message.get("content", "")
+
+
+def _execute_restaurant_batch(
+    client: FuelixClient, tasks: list[dict], request: dict
+) -> tuple[dict[str, dict], dict[str, list[dict]]]:
+    """Use one bounded tool loop for all independent restaurant tasks."""
+    observed: dict[str, list[dict]] = {}
+    task_by_slot = {task["slot"]: task for task in tasks}
+    tool_impls = dict(TOOL_IMPLS)
+
+    def search_batch(tasks: list[dict]):
+        result = {}
+        for request_task in tasks:
+            slot = str(request_task.get("slot", ""))
+            task = task_by_slot.get(slot)
+            if task is None:
+                continue
+            allergies = task["constraints"].get("allergies", [])
+            cuisine_values = task["constraints"].get("cuisines") or []
+            rows = search_restaurants(
+                city=request["city"], meal=task["meal"],
+                area=task.get("area_hint") or None,
+                cuisine=cuisine_values[0] if cuisine_values else None,
+                price_level_max=_max_price_level(task["budget_per_person"]),
+                exclude_flags=[f"{allergy}_risk" for allergy in allergies],
+                limit=5,
+            )
+            observed[slot] = rows
+            result[slot] = rows
+        return result
+
+    tool_impls["search_restaurants_batch"] = search_batch
+    batch_tools = [{"type": "function", "function": {
+        "name": "search_restaurants_batch",
+        "description": "Search verified restaurants for every requested meal slot.",
+        "parameters": {"type": "object", "properties": {
+            "tasks": {"type": "array", "items": {"type": "object", "properties": {
+                "slot": {"type": "string", "enum": list(task_by_slot)}},
+                "required": ["slot"]}}},
+            "required": ["tasks"]}}}]
+    system = (config.PROMPTS_DIR / "restaurant.md").read_text(encoding="utf-8")
+    task_lines = []
+    for task in tasks:
+        task_lines.append(
+            f"{task['slot']}: meal={task['meal']}, "
+            f"budget_per_person={task['budget_per_person']:.2f}, "
+            f"area={task.get('area_hint') or 'any'}"
+        )
+    user = (
+        "Complete every restaurant task below. Call search_restaurants_batch "
+        "exactly once with every slot ID in its tasks argument. Then "
+        "return STRICT JSON only as an array with one object per slot: "
+        "[{\"slot\": str, \"venue_id\": str, \"why_recommended\": str}]. "
+        "Choose only from the matching tool response; never invent venues.\n"
+        + "\n".join(task_lines)
+    )
+    result = run_tool_loop(
+        client, config.MODEL_ROUTING["restaurant"], system, user,
+        tools=batch_tools, tool_impls=tool_impls, max_rounds=3)
+    selections = result if isinstance(result, list) else [result]
+    selected_by_slot: dict[str, dict] = {}
+    used: set[str] = set()
+    for selection in selections:
+        slot = str(selection.get("slot", ""))
+        candidates = observed.get(slot, [])
+        candidate = next((item for item in candidates
+                          if item["venue_id"] == selection.get("venue_id")
+                          and item["venue_id"] not in used), None)
+        if candidate is None:
+            candidate = next((item for item in candidates
+                              if item["venue_id"] not in used), None)
+        if candidate is not None:
+            selected_by_slot[slot] = {
+                **candidate,
+                "why": selection.get("why_recommended") or
+                "Selected by the restaurant executor from verified tool results.",
+            }
+            used.add(candidate["venue_id"])
+    for task in tasks:
+        if task["slot"] in selected_by_slot:
+            continue
+        candidates = observed.get(task["slot"], [])
+        candidate = next((item for item in candidates
+                          if item["venue_id"] not in used), None)
+        if candidate is not None:
+            selected_by_slot[task["slot"]] = {
+                **candidate,
+                "why": "Selected as a verified fallback from tool results.",
+            }
+            used.add(candidate["venue_id"])
+    return selected_by_slot, observed
+
+
 # ------------------------------------------------------- TIER 1
 def run_tier1(request: dict) -> TripState:
     """
@@ -37,55 +270,81 @@ def run_tier1(request: dict) -> TripState:
     t0 = time.time()
     st = TripState(request=request)
     days = int(request.get("days", 2))
-    city = request["city"]
     party_size = max(1, int(request.get("party_size", 1)))
 
-    # 1) PLAN
-    per_day = float(request["budget_total"]) / days
-    st.plan = {
-        "days": days,
-        "budget_allocation": {f"day{d}": round(per_day, 2) for d in range(1, days + 1)},
-        "constraints": {
-            "budget_total": request["budget_total"],
-            "allergies": request.get("allergies", []),
-            "cuisines": request.get("cuisines", []),
-        },
-    }
-    st.log("planner", f"Allocated ${per_day:.0f}/day across {days} days (mock or LLM)")
-
-    # 2) EXECUTE restaurants — allergen flags excluded IN CODE
-    exclude = [f"{a}_risk" for a in request.get("allergies", [])]
-    cuisine = (request.get("cuisines") or [None])[0]
-    chosen = []
-    used_venue_ids = set()
-    for d in range(1, days + 1):
-        for m in MEALS:
-            slot = f"day{d}.{m}"
+    if config.MOCK_MODE:
+        per_day = float(request["budget_total"]) / days
+        st.plan = {
+            "days": days,
+            "budget_allocation": {f"day{d}": round(per_day, 2) for d in range(1, days + 1)},
+            "constraints": {
+                "budget_total": request["budget_total"],
+                "allergies": request.get("allergies", []),
+                "cuisines": request.get("cuisines", []),
+            },
+        }
+        st.log("planner", f"Allocated ${per_day:.0f}/day across {days} days (mock)")
+        exclude = [f"{a}_risk" for a in request.get("allergies", [])]
+        cuisine = (request.get("cuisines") or [None])[0]
+        tasks = [{"slot": f"day{d}.{m}", "meal": m,
+                  "area_hint": "", "budget_per_person": _budget_per_person(request, days),
+                  "constraints": {"allergies": request.get("allergies", []),
+                                  "cuisines": request.get("cuisines", [])}}
+                 for d in range(1, days + 1) for m in MEALS]
+        chosen = []
+        used_venue_ids = set()
+        for task in tasks:
             cands = search_restaurants(
-                city=city, meal=m, cuisine=cuisine,
+                city=request["city"], meal=task["meal"], cuisine=cuisine,
                 price_level_max=2, exclude_flags=exclude, limit=20)
-            st.candidates[slot] = cands
+            st.candidates[task["slot"]] = cands
             pick = next((candidate for candidate in cands
                          if candidate["venue_id"] not in used_venue_ids), None)
             if pick:
                 used_venue_ids.add(pick["venue_id"])
                 chosen.append({
-                    "slot": slot,
-                    "venue_id": pick["venue_id"],
+                    "slot": task["slot"], "venue_id": pick["venue_id"],
                     "name": pick["name"],
                     "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
                     "lat": pick.get("lat"), "lon": pick.get("lon"),
                     "source": pick.get("source"),
                     "why": f"Top-rated {pick.get('cuisine', '')} match under constraints",
                 })
-                st.log("restaurant", f"{slot}: chose {pick['name']} via {pick.get('source')}")
+                st.log("restaurant", f"{task['slot']}: chose {pick['name']} via {pick.get('source')}")
+    else:
+        client = FuelixClient(timeout=30, max_retries=1)
+        st.plan = _plan_with_llm(client, request)
+        st.log("planner", f"Created {len(st.plan['tasks'])} validated restaurant tasks")
+        selected_by_slot, observed = _execute_restaurant_batch(
+            client, st.plan["tasks"], request)
+        chosen = []
+        for task in st.plan["tasks"]:
+            pick = selected_by_slot.get(task["slot"])
+            candidates = observed.get(task["slot"], [])
+            st.candidates[task["slot"]] = candidates
+            if pick is None:
+                raise ValueError(f"No verified candidate for {task['slot']}")
+            chosen.append({
+                "slot": task["slot"], "venue_id": pick["venue_id"],
+                "name": pick["name"],
+                "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
+                "lat": pick.get("lat"), "lon": pick.get("lon"),
+                "source": pick.get("source"), "why": pick["why"],
+            })
+            st.log("restaurant", f"{task['slot']}: chose {pick['name']} via {pick.get('source')}")
 
     # 3) BUDGET — pure Python
     st.budget = check_budget(chosen, float(request["budget_total"]))
     st.log("budget", f"status={st.budget['status']} projected={st.budget['projected']}")
 
-    # 4) FORMAT (mock: itinerary = chosen list; real mode = LLM formatter)
+    # 4) FORMAT
     st.itinerary = chosen
+    formatted = ""
+    telemetry = {"llm_calls": 0, "input_tokens": 0, "output_tokens": 0}
+    if not config.MOCK_MODE:
+        formatted = _format_with_llm(client, st)
+        telemetry = dict(client.telemetry)
+        st.log("formatter", "Formatted the verified itinerary with Fuel iX")
     st.meta = {
         "tier": 1,
         "elapsed_s": round(time.time() - t0, 2),
@@ -93,6 +352,9 @@ def run_tier1(request: dict) -> TripState:
         "data_backend": config.DATA_BACKEND,
         "tool_backends": last_backend_report(),
         "latency_budget_s": config.LATENCY_BUDGET_S,
+        "llm_calls": telemetry["llm_calls"],
+        "tokens": telemetry,
+        "formatted": formatted,
     }
     return st
 
