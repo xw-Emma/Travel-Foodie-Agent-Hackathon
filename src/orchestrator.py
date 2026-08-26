@@ -38,6 +38,7 @@ def run_tier1(request: dict) -> TripState:
     st = TripState(request=request)
     days = int(request.get("days", 2))
     city = request["city"]
+    party_size = max(1, int(request.get("party_size", 1)))
 
     # 1) PLAN
     per_day = float(request["budget_total"]) / days
@@ -56,20 +57,23 @@ def run_tier1(request: dict) -> TripState:
     exclude = [f"{a}_risk" for a in request.get("allergies", [])]
     cuisine = (request.get("cuisines") or [None])[0]
     chosen = []
+    used_venue_ids = set()
     for d in range(1, days + 1):
         for m in MEALS:
             slot = f"day{d}.{m}"
             cands = search_restaurants(
                 city=city, meal=m, cuisine=cuisine,
-                exclude_flags=exclude, limit=3)
+                price_level_max=2, exclude_flags=exclude, limit=3)
             st.candidates[slot] = cands
-            if cands:
-                pick = cands[0]
+            pick = next((candidate for candidate in cands
+                         if candidate["venue_id"] not in used_venue_ids), None)
+            if pick:
+                used_venue_ids.add(pick["venue_id"])
                 chosen.append({
                     "slot": slot,
                     "venue_id": pick["venue_id"],
                     "name": pick["name"],
-                    "cost": pick.get("avg_meal_cost", 0),
+                    "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
                     "lat": pick.get("lat"), "lon": pick.get("lon"),
                     "source": pick.get("source"),
                     "why": f"Top-rated {pick.get('cuisine', '')} match under constraints",
@@ -107,6 +111,7 @@ def run_tier2(request: dict) -> TripState:
     st = run_tier1(request)
     days = int(request.get("days", 2))
     city = request["city"]
+    party_size = max(1, int(request.get("party_size", 1)))
 
     # Attractions
     for d in range(1, days + 1):
@@ -117,7 +122,8 @@ def run_tier2(request: dict) -> TripState:
             a = attrs[0]
             st.itinerary.append({
                 "slot": slot, "venue_id": a["venue_id"], "name": a["name"],
-                "cost": a.get("cost", 0), "lat": a.get("lat"), "lon": a.get("lon"),
+                "cost": round(a.get("cost", 0) * party_size, 2),
+                "lat": a.get("lat"), "lon": a.get("lon"),
                 "source": a.get("source"),
                 "why": "Top attraction near the food plan",
             })

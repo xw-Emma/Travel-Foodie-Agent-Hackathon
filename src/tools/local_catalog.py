@@ -31,7 +31,14 @@ def _conn() -> sqlite3.Connection:
 CUISINE_ALIASES = {
     "asian": {"thai", "korean", "chinese", "vietnamese", "japanese", "indian",
               "malaysian", "indonesian", "asian"},
-    "international": {"international", "fusion", "contemporary"},
+    "international": {
+        "bakery", "bbq", "breakfast", "brunch", "burgers", "cafe", "canadian",
+        "chinese", "dessert", "eastern_european", "ethiopian", "french",
+        "hawaiian", "indian", "italian", "japanese", "korean", "latin",
+        "mediterranean", "mexican", "middle_eastern", "nepalese", "pub",
+        "sandwiches", "seafood", "spanish", "steakhouse", "thai", "vegetarian",
+        "vietnamese",
+    },
 }
 
 
@@ -47,6 +54,9 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
     """
     q = "SELECT * FROM restaurants WHERE lower(city) = lower(?)"
     params: list = [city]
+    if meal:
+        q += " AND (';' || lower(meal_types) || ';') LIKE '%;' || lower(?) || ';%'"
+        params.append(meal)
     if area:
         q += " AND lower(area) = lower(?)"
         params.append(area)
@@ -84,12 +94,6 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
         if len(out) >= limit:
             break
 
-    # Soft fallback: if cuisine filter emptied the list, return unfiltered
-    # (still allergen-safe) so demos never go blank on sparse seed data.
-    if cuisine and not out:
-        return search_restaurants(city, meal, area=area, cuisine=None,
-                                  price_level_max=price_level_max,
-                                  exclude_flags=exclude_flags, limit=limit)
     return out
 
 
