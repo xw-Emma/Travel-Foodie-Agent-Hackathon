@@ -63,7 +63,7 @@ def run_tier1(request: dict) -> TripState:
             slot = f"day{d}.{m}"
             cands = search_restaurants(
                 city=city, meal=m, cuisine=cuisine,
-                price_level_max=2, exclude_flags=exclude, limit=3)
+                price_level_max=2, exclude_flags=exclude, limit=20)
             st.candidates[slot] = cands
             pick = next((candidate for candidate in cands
                          if candidate["venue_id"] not in used_venue_ids), None)
