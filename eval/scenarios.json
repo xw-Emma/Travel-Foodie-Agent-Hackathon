@@ -1,0 +1,43 @@
+[
+  {
+    "id": "S1",
+    "request": {
+      "city": "Calgary",
+      "days": 2,
+      "budget_total": 500,
+      "party_size": 2,
+      "cuisines": ["international"],
+      "allergies": ["peanut"],
+      "max_walk_km": 2.0
+    },
+    "checks": ["no_allergen_leaks", "budget_ok", "has_meals"]
+  },
+  {
+    "id": "S2",
+    "request": {
+      "city": "Calgary",
+      "days": 2,
+      "budget_total": 300,
+      "party_size": 2,
+      "cuisines": ["asian"],
+      "allergies": [],
+      "max_walk_km": 2.0
+    },
+    "checks": ["budget_ok", "has_meals"],
+    "note": "Vancouver scenario in FINAL slides — use live Places for Vancouver; local fallback stays Calgary-scoped."
+  },
+  {
+    "id": "S3",
+    "request": {
+      "city": "Calgary",
+      "days": 1,
+      "budget_total": 150,
+      "party_size": 4,
+      "cuisines": ["international"],
+      "allergies": [],
+      "max_walk_km": 1.0
+    },
+    "checks": ["budget_ok", "has_meals"],
+    "note": "Montreal family scenario — live mode can target Montreal; local fallback uses Calgary 1-day."
+  }
+]

@@ -1,0 +1,26 @@
+venue_id,name,neighbourhood,lat,lon,category,slot_types,duration_min,cost_per_person,closed_days,open_time,close_time,rating,is_trap,description
+a001,Riverfront Observation Tower,Downtown Core,51.0447,-114.0629,landmark,am;pm,60,22,,09:00,21:00,4.4,,Glass-floor observation deck with a full circle view of the Rockies on a clear day.
+a002,Prairie Heritage Museum,Downtown Core,51.0455,-114.0651,museum,am;pm,120,18,mon,10:00,17:00,4.6,closed_monday,Four floors of regional art and settlement history with a strong Indigenous gallery.
+a003,Island Park Loop,Eau Claire,51.0541,-114.0713,park,am;pm,75,0,,06:00,23:00,4.7,,Island park in the river with a paved loop, lagoon and summer festival lawn.
+a004,East Village Music Hall,East Village,51.0459,-114.0421,museum,pm,105,20,mon;tue,10:00,17:00,4.7,,Interactive music museum in a landmark building; instrument rooms on every floor.
+a005,Pedestrian Bridge Walk,Eau Claire,51.0533,-114.0698,landmark,am;pm,30,0,,00:00,23:59,4.5,,Red spiral footbridge over the river — fifteen minutes, and the best photo in the city.
+a006,Inglewood Bird Sanctuary,Inglewood,51.0367,-114.0201,park,am,90,0,,07:00,19:00,4.6,,Riverside wetland trails with roughly 270 recorded bird species.
+a007,Heritage Village Railway,Marda Loop,51.0089,-114.0982,attraction,am;pm,180,32,mon;tue,10:00,17:00,4.5,,Living-history village with a working steam train and costumed interpreters.
+a008,Calgary Zoo Gardens,Bridgeland,51.0455,-114.0243,attraction,am;pm,180,35,,09:00,17:00,4.6,,Large zoo and botanical garden on an island site; the penguin house is the draw.
+a009,Kensington Shopping Walk,Kensington,51.0536,-114.0868,shopping,am;pm,60,0,,10:00,19:00,4.2,,Compact independent retail strip that pairs well with a coffee stop.
+a010,Stephen Avenue Mall,Downtown Core,51.0446,-114.0655,shopping,am;pm,45,0,,08:00,22:00,4.1,,Pedestrian-only sandstone street with buskers through the lunch hour.
+a011,Glenmore Reservoir Path,Marda Loop,51.0021,-114.1015,park,am,90,0,,06:00,22:00,4.5,,Lakeside path with sailing club views and long uninterrupted stretches.
+a012,Fish Creek Valley Trail,Marda Loop,50.9525,-114.0705,park,am;pm,120,0,,06:00,22:00,4.7,,One of the largest urban parks in the country; deer sightings are routine.
+a013,Contemporary Art Gallery,East Village,51.0451,-114.0438,museum,am;pm,75,12,mon,11:00,18:00,4.3,,Rotating contemporary exhibitions in a converted power station.
+a014,Fort Calgary Historic Site,East Village,51.0442,-114.0389,museum,am;pm,90,16,mon,10:00,17:00,4.2,,Interpretive centre at the confluence of the two rivers where the city began.
+a015,Beltline Mural Route,Beltline,51.0387,-114.0748,walking_tour,am;pm,60,0,,00:00,23:59,4.4,,Self-guided route past three dozen large-format murals; free and always open.
+a016,Science Discovery Centre,Downtown Core,51.0472,-114.0705,museum,am;pm,120,26,mon,10:00,16:00,4.5,,Hands-on science exhibits and a dome theatre; busy with school groups midweek.
+a017,Olympic Park Summer Slide,Marda Loop,51.0836,-114.2153,attraction,am;pm,150,45,mon;tue,10:00,18:00,4.4,,Former Olympic site running summer luge, chairlift rides and downhill trails.
+a018,Chinatown Cultural Centre,Chinatown,51.0499,-114.0625,museum,am;pm,60,10,mon,11:00,17:00,4.3,,Domed cultural centre with a small museum and a good gift shop.
+a019,Riverwalk Promenade,East Village,51.0463,-114.0405,park,am;pm,45,0,,00:00,23:59,4.5,,Paved riverside promenade linking the east side back to downtown.
+a020,Central Library Atrium,East Village,51.0457,-114.0448,landmark,am;pm,45,0,,09:00,20:00,4.8,,Architecturally striking public library; the wood atrium is worth the detour.
+a021,Bow River Kayak Rental,Eau Claire,51.0529,-114.0731,activity,am;pm,120,48,mon;tue,09:00,18:00,4.4,,Guided float trips and hourly rentals from the riverbank; summer only.
+a022,Military Heritage Museum,Marda Loop,51.0272,-114.1096,museum,am;pm,90,15,mon;sun,10:00,16:00,4.3,,Regimental collections and restored vehicles in a quiet suburban site.
+a023,Inglewood Antique Row,Inglewood,51.0411,-114.0334,shopping,am;pm,75,0,sun,10:00,18:00,4.4,,Six blocks of antique dealers, record shops and design stores.
+a024,Sunridge Farmers Market,Bridgeland,51.0548,-114.0421,market,am,90,0,mon;tue;wed;thu,09:00,15:00,4.6,,Weekend producer market with prepared food stalls and live music.
+a025,Rotary Park Lookout,Bridgeland,51.0556,-114.0592,park,am;pm,30,0,,06:00,23:00,4.4,,Small hilltop park with the classic skyline view back across the river.
