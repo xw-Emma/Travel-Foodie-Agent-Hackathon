@@ -283,6 +283,11 @@ def _pick_local_task(task: dict, request: dict, used: set[str]) -> tuple[dict | 
         city=request["city"], meal=task["meal"], cuisine=cuisines[0] if cuisines else None,
         price_level_max=_max_price_level(task["budget_per_person"]),
         exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
+    if len([row for row in rows if row["venue_id"] not in used]) == 0 and cuisines:
+        rows = search_restaurants(
+            city=request["city"], meal=task["meal"], cuisine=None,
+            price_level_max=_max_price_level(task["budget_per_person"]),
+            exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
     available = [row for row in rows if row["venue_id"] not in used]
     pick = min(available, key=lambda row: float(row.get("avg_meal_cost", 0)), default=None)
     return (dict(pick, why="Selected from verified local dataset.") if pick else None, rows)
@@ -323,12 +328,22 @@ async def _execute_restaurants_tier2(
         observed[slot] = rows
         replacement = pick if pick and pick["venue_id"] not in used else next(
             (row for row in rows if row["venue_id"] not in used), None)
-        if replacement is None and pick:
-            replacement = pick
-        if replacement is None and rows:
-            replacement = rows[0]
         if replacement:
             selected[slot] = replacement
+            used.add(replacement["venue_id"])
+    for task in tasks:
+        slot = task["slot"]
+        if slot in selected:
+            continue
+        allergies = task["constraints"].get("allergies", [])
+        rows = search_restaurants(
+            city=request["city"], meal=task["meal"], cuisine=None,
+            price_level_max=_max_price_level(task["budget_per_person"]),
+            exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
+        observed[slot] = rows
+        replacement = next((row for row in rows if row["venue_id"] not in used), None)
+        if replacement:
+            selected[slot] = dict(replacement, why="Selected from verified fallback candidates.")
             used.add(replacement["venue_id"])
     return selected, observed, failures
 
@@ -483,7 +498,11 @@ async def _run_tier2_async(request: dict) -> TripState:
                 return_exceptions=True,
             )
             for slot, result in zip(attraction_slots, replacement_results):
-                attraction = result[0] if isinstance(result, list) and result else None
+                reserved_attractions = {item["venue_id"] for item in st.itinerary
+                                        if item["slot"] not in attraction_slots
+                                        and ".attraction" in item["slot"]}
+                attraction = next((item for item in (result if isinstance(result, list) else [])
+                                   if item["venue_id"] not in reserved_attractions), None)
                 current = next((item for item in st.itinerary if item["slot"] == slot), None)
                 if attraction and current:
                     current.update({"venue_id": attraction["venue_id"], "name": attraction["name"],
@@ -495,7 +514,11 @@ async def _run_tier2_async(request: dict) -> TripState:
             st.budget = check_budget(st.itinerary, float(request["budget_total"]))
     st.meta = {"tier": 2, "elapsed_s": round(time.time() - t0, 2), "mock_llm": config.MOCK_MODE,
                "data_backend": config.DATA_BACKEND, "tool_backends": last_backend_report(),
-               "latency_budget_s": config.LATENCY_BUDGET_S}
+               "latency_budget_s": config.LATENCY_BUDGET_S,
+               "llm_calls": client.telemetry["llm_calls"] if client else 0,
+               "tokens": dict(client.telemetry) if client else {
+                   "llm_calls": 0, "input_tokens": 0, "output_tokens": 0,
+               }}
     return st
 
 
