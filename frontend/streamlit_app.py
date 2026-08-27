@@ -1,4 +1,8 @@
-"""Chatbot UI — calls Cloud Run foodie-backend /plan. No Fuel iX key in the browser."""
+"""Thin deployment UI that calls the FastAPI backend over HTTP.
+
+This is not the primary local demo UI; use app/streamlit_app.py for the full
+in-process Tier 1/Tier 2 experience.
+"""
 from __future__ import annotations
 
 import json
@@ -70,7 +74,8 @@ def call_plan(prefs: dict) -> dict:
 
 
 st.set_page_config(page_title="Travel Foodie Agent", layout="wide")
-st.title("Travel Foodie Agent")
+st.title("Travel Foodie Agent - Deployment UI")
+st.caption("Thin HTTP client for the FastAPI backend. For the full local Tier 2 UI, run app/streamlit_app.py.")
 st.caption(f"Backend: {BACKEND_URL}")
 
 if "messages" not in st.session_state:

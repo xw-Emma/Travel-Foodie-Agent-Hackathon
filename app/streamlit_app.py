@@ -1,4 +1,8 @@
-"""Streamlit UI for the Travel Foodie Agent."""
+"""Primary in-process Streamlit UI for the Travel Foodie Agent.
+
+Use this entrypoint for local development and Tier 1/Tier 2 demonstrations.
+The separate frontend/streamlit_app.py is the thin HTTP deployment client.
+"""
 from __future__ import annotations
 
 import json
@@ -141,8 +145,12 @@ if prompt:
     with st.chat_message("assistant", avatar=":material/restaurant:"):
         with st.spinner("Building and checking your itinerary..."):
             try:
-                config.DATA_BACKEND = backend
-                state = run_tier2(request) if tier == 2 else run_tier1(request)
+                validated = TripRequest(**request, tier=tier, data_backend=backend)
+                token = config.set_backend_override(backend)
+                try:
+                    state = run_tier2(validated.to_request_dict()) if tier == 2 else run_tier1(validated.to_request_dict())
+                finally:
+                    config._backend_override.reset(token)
                 st.session_state.last_request = request
                 st.session_state.last_state = state.to_json()
                 st.markdown(f"Plan ready for **{request['city']}** with **{len(state.itinerary)}** verified stops.")

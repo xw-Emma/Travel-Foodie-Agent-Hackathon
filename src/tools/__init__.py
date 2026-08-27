@@ -23,9 +23,10 @@ def last_backend_report() -> dict:
 
 
 def _want_live() -> bool:
-    if config.DATA_BACKEND == "local":
+    backend = config.current_backend()
+    if backend == "local":
         return False
-    if config.DATA_BACKEND == "live":
+    if backend == "live":
         return True
     return config.LIVE_DATA_AVAILABLE  # auto
 
@@ -52,11 +53,11 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                 _record("restaurants", "google_places")
                 return rows
             # empty live result in auto mode → fall through
-            if config.DATA_BACKEND == "live":
+            if config.current_backend() == "live":
                 _record("restaurants", "google_places_empty")
                 return rows
         except Exception as exc:  # noqa: BLE001 - demo-day resilience
-            if config.DATA_BACKEND == "live":
+            if config.current_backend() == "live":
                 raise
             _record("restaurants", f"fallback_after_error:{type(exc).__name__}", True)
     rows = _local.search_restaurants(
@@ -78,7 +79,7 @@ def get_venue_details(venue_id: str) -> dict:
             _record("details", "google_places")
             return d
         except Exception as exc:  # noqa: BLE001
-            if config.DATA_BACKEND == "live":
+            if config.current_backend() == "live":
                 raise
             _record("details", f"fallback_after_error:{type(exc).__name__}", True)
     return _local.get_venue_details(venue_id)
@@ -93,11 +94,11 @@ def search_attractions(city: str, category: str | None = None,
             if rows:
                 _record("attractions", "google_places")
                 return rows
-            if config.DATA_BACKEND == "live":
+            if config.current_backend() == "live":
                 _record("attractions", "google_places_empty")
                 return rows
         except Exception as exc:  # noqa: BLE001
-            if config.DATA_BACKEND == "live":
+            if config.current_backend() == "live":
                 raise
             _record("attractions", f"fallback_after_error:{type(exc).__name__}", True)
     rows = _local.search_attractions(city, category=category, limit=limit)
@@ -114,7 +115,7 @@ def estimate_travel(from_lat: float, from_lon: float,
             _record("travel", "google_routes")
             return r
         except Exception as exc:  # noqa: BLE001
-            if config.DATA_BACKEND == "live":
+            if config.current_backend() == "live":
                 raise
             _record("travel", f"fallback_after_error:{type(exc).__name__}", True)
     r = _local.estimate_travel(from_lat, from_lon, to_lat, to_lon, mode=mode)

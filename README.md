@@ -19,6 +19,22 @@ python -m src.orchestrator
 You should see: allergen leaks `[]`, budget `ok`, Critic slot-guard accepting a
 valid slot and rejecting a malformed one.
 
+## Web UI entrypoints
+
+The primary browser UI is `app/streamlit_app.py`. It runs the orchestrator
+in-process and exposes Tier 1/Tier 2, backend selection, itinerary, routes,
+map, trace, and debug state.
+
+Start the primary UI with:
+
+```powershell
+streamlit run app/streamlit_app.py
+```
+
+The `frontend/` directory contains a separate thin HTTP client UI for the
+FastAPI/Cloud Run deployment. It is not the primary local demo UI. For local
+development and Tier 2 demonstrations, always use `app/streamlit_app.py`.
+
 ## Three tiers
 
 | Tier | What | How |
@@ -46,7 +62,9 @@ Travel-Foodie-Agent-Hackathon-Starter/
 │   ├── orchestrator.py       # run_tier1 / run_tier2
 │   ├── agents/               # Critic helpers (extend here)
 │   └── tools/                # facade + places_live + routes_live + local
-├── app/cli.py                # simple CLI UI
+├── app/streamlit_app.py      # primary browser UI (Tier 1/Tier 2)
+├── app/cli.py                # simple CLI UI fallback
+├── frontend/                 # thin HTTP client UI for deployed backend
 ├── eval/                     # scenarios + acceptance checks
 └── scripts/smoke_test.py     # M0 gate script
 ```

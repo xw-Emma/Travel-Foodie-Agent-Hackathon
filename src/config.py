@@ -19,6 +19,7 @@ notebooks, or slides.
 """
 from __future__ import annotations
 
+import contextvars
 import os
 from pathlib import Path
 
@@ -27,6 +28,8 @@ DATA_DIR = KIT_ROOT / "data"
 PROMPTS_DIR = KIT_ROOT / "prompts"
 DB_PATH = DATA_DIR / "foodie.sqlite"
 CACHE_DB_PATH = DATA_DIR / "api_cache.sqlite"
+_backend_override: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "backend_override", default=None)
 
 
 def load_dotenv(path: Path | None = None) -> None:
@@ -71,6 +74,16 @@ ROUTES_BASE_URL = "https://routes.googleapis.com/directions/v2:computeRoutes"
 
 DATA_BACKEND = os.environ.get("FOODIE_DATA_BACKEND", "auto").lower()  # live|local|auto
 CACHE_ENABLED = os.environ.get("FOODIE_CACHE", "on").lower() != "off"
+
+
+def current_backend() -> str:
+    """Return the request-local backend override, or the process default."""
+    return (_backend_override.get() or DATA_BACKEND).lower()
+
+
+def set_backend_override(value: str | None):
+    """Set a request-local backend and return its reset token."""
+    return _backend_override.set(value.lower() if value else None)
 
 # --------------------------------------------------------------- heuristics
 # Google Places has no allergen fields. In live mode we conservatively infer a

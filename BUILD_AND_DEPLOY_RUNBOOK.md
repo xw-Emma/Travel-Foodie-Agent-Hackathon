@@ -669,6 +669,11 @@ git tag tier2-working
 
 Gerardo will expect a chat window. The rubric gives \~7 points for agent-trace visibility and \+2 for a map. `app/cli.py` is a fully accepted UI — this is upside, not a prerequisite.
 
+**Primary UI decision:** develop and demo `app/streamlit_app.py`. It is the
+full in-process browser UI for Tier 1 and Tier 2. The separate
+`frontend/streamlit_app.py` is a thin HTTP client intended for the optional
+FastAPI/Cloud Run deployment and is not the primary local demo entrypoint.
+
 ```
 pip install --proxy http://pac.tsl.telus.com:8080 streamlit pandas
 ```
