@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
 
 from src import config  # noqa: E402
 from src.orchestrator import run_tier1, run_tier2  # noqa: E402
+from src.request_model import TripRequest  # noqa: E402
 
 
 st.set_page_config(page_title="Travel Foodie Agent", page_icon=":material/restaurant:", layout="wide")
@@ -98,7 +99,18 @@ def render_result(state) -> None:
         st.caption(f"Elapsed {meta.get('elapsed_s', 0)}s | LLM calls {meta.get('llm_calls', 0)}")
 
     with st.expander("Routes"):
-        st.dataframe(pd.DataFrame(state.routes), width="stretch", hide_index=True)
+        route_rows = []
+        for day_route in state.routes:
+            for leg in day_route.get("legs", []):
+                route_rows.append({
+                    "Day": day_route.get("day"),
+                    "From": leg.get("from"),
+                    "To": leg.get("to"),
+                    "Distance (km)": leg.get("km"),
+                    "Minutes": leg.get("minutes"),
+                    "Source": leg.get("source"),
+                })
+        st.dataframe(pd.DataFrame(route_rows), width="stretch", hide_index=True)
 
     with st.expander("Raw state / debug"):
         st.json(state.to_json())

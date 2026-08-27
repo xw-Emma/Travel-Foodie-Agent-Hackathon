@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+from datetime import date
 
 from . import config
 from .fuelix_client import FuelixClient, parse_json_reply, run_tool_loop
@@ -368,36 +369,89 @@ async def _execute_attractions_tier2(city: str, days: int) -> tuple[dict[str, di
     return selected, failures
 
 
-def _compute_routes(items: list[dict]) -> list[dict]:
-    geo = [item for item in items if item.get("lat") is not None and item.get("lon") is not None]
-    return asyncio.run(_compute_routes_async(geo))
+DAY_ORDER = ("origin", "breakfast", "attraction1", "lunch",
+             "attraction2", "dinner", "attraction3")
 
 
-async def _compute_routes_async(geo: list[dict]) -> list[dict]:
-    results = await asyncio.gather(
-        *(asyncio.to_thread(estimate_travel, a["lat"], a["lon"], b["lat"], b["lon"], "walk")
-          for a, b in zip(geo, geo[1:])),
-        return_exceptions=True,
-    )
-    routes = []
-    for (a, b), result in zip(zip(geo, geo[1:]), results):
+def _sort_day_stops(items: list[dict]) -> list[dict]:
+    rank = {name: index for index, name in enumerate(DAY_ORDER)}
+    return sorted(items, key=lambda item: rank.get(item["slot"].split(".", 1)[1], 99))
+
+
+def _resolved_origin(request: dict, day: int) -> dict | None:
+    origin = request.get("origin") or {}
+    if origin.get("lat") is None or origin.get("lon") is None:
+        return None
+    return {"slot": f"day{day}.origin", "name": origin.get("label") or "Origin",
+            "lat": origin["lat"], "lon": origin["lon"]}
+
+
+def _day_label(request: dict, day: int) -> tuple[str | None, str | None]:
+    start_date = request.get("start_date")
+    if not start_date:
+        return None, None
+    if isinstance(start_date, str):
+        start_date = date.fromisoformat(start_date)
+    current = start_date.fromordinal(start_date.toordinal() + day - 1)
+    return current.isoformat(), current.strftime("%a").lower()
+
+
+async def _compute_routes_async(items: list[dict], request: dict) -> list[dict]:
+    days = int(request.get("days", 2))
+    mode = str(request.get("transport_mode", "WALK")).lower()
+    grouped = {day: _sort_day_stops([item for item in items
+                                     if item.get("slot", "").startswith(f"day{day}.")])
+               for day in range(1, days + 1)}
+    day_stops = []
+    for day in range(1, days + 1):
+        stops = grouped[day]
+        origin = _resolved_origin(request, day)
+        if origin:
+            stops = [origin, *stops]
+        day_stops.append((day, stops))
+
+    calls = []
+    call_pairs = []
+    for day, stops in day_stops:
+        for source, target in zip(stops, stops[1:]):
+            call_pairs.append((day, source, target))
+            calls.append(asyncio.to_thread(
+                estimate_travel, source["lat"], source["lon"],
+                target["lat"], target["lon"], mode))
+    results = await asyncio.gather(*calls, return_exceptions=True)
+    routes_by_day = {day: [] for day in range(1, days + 1)}
+    for (day, source, target), result in zip(call_pairs, results):
         if isinstance(result, Exception):
-            routes.append({"from": a["name"], "to": b["name"], "error": str(result)})
+            leg = {"from_slot": source["slot"], "to_slot": target["slot"],
+                   "from": source["name"], "to": target["name"], "error": str(result)}
         else:
-            routes.append({**result, "from": a["name"], "to": b["name"]})
+            leg = {**result, "from_slot": source["slot"], "to_slot": target["slot"],
+                   "from": source["name"], "to": target["name"]}
+        routes_by_day[day].append(leg)
+
+    routes = []
+    for day, stops in day_stops:
+        legs = routes_by_day[day]
+        totals = {"km": round(sum(float(leg.get("km", 0)) for leg in legs), 2),
+                  "minutes": round(sum(float(leg.get("minutes", 0)) for leg in legs), 1)}
+        trip_date, weekday = _day_label(request, day)
+        routes.append({"day": day, "date": trip_date, "weekday": weekday,
+                       "mode": mode.upper(), "legs": legs, "totals": totals,
+                       "optimized": False})
     return routes
 
 
 def _deterministic_critic(st: TripState, request: dict, days: int) -> dict:
     issues = []
     max_walk = float(request.get("max_walk_km", 2.0))
-    for route in st.routes:
-        if route.get("km", 0) > max_walk:
-            target = next((item["slot"] for item in st.itinerary if item["name"] == route["to"]), "")
-            if target:
-                issues.append({"slot": target, "type": "travel",
-                               "detail": f"{route['km']} km exceeds {max_walk} km walking limit",
-                               "suggestion": "Choose a closer verified venue."})
+    for day_route in st.routes:
+        for route in day_route.get("legs", []):
+            if route.get("km", 0) > max_walk:
+                target = route.get("to_slot", "")
+                if target:
+                    issues.append({"slot": target, "type": "travel",
+                                   "detail": f"{route['km']} km exceeds {max_walk} km walking limit",
+                                   "suggestion": "Choose a closer verified venue."})
     return {"verdict": "revise" if issues else "approved", "issues": issues}
 
 
@@ -418,7 +472,7 @@ async def _run_tier2_async(request: dict) -> TripState:
     days = int(request.get("days", 2))
     party_size = max(1, int(request.get("party_size", 1)))
     st = TripState(request=request)
-    client = None if config.MOCK_MODE or config.DATA_BACKEND == "local" else FuelixClient(timeout=30, max_retries=1)
+    client = None if config.MOCK_MODE or config.current_backend() == "local" else FuelixClient(timeout=30, max_retries=1)
     tasks = _local_restaurant_tasks(request) if client is None else _plan_with_llm(client, request)["tasks"]
     selected, observed, failures = await _execute_restaurants_tier2(tasks, request, client)
     for task in tasks:
@@ -450,9 +504,8 @@ async def _run_tier2_async(request: dict) -> TripState:
     for slot, error in attraction_failures:
         st.log("attraction", f"{slot}: {type(error).__name__}: {error}")
 
-    st.routes = await _compute_routes_async([item for item in st.itinerary
-                                             if item.get("lat") is not None and item.get("lon") is not None])
-    st.log("route", f"{len(st.routes)} travel legs computed")
+    st.routes = await _compute_routes_async(st.itinerary, request)
+    st.log("route", f"{sum(len(day.get('legs', [])) for day in st.routes)} travel legs computed")
     st.budget = check_budget(st.itinerary, float(request["budget_total"]))
     for iteration in range(1, config.CRITIC_MAX_ITERATIONS + 1):
         try:
@@ -486,8 +539,7 @@ async def _run_tier2_async(request: dict) -> TripState:
                                 "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
                                 "lat": pick.get("lat"), "lon": pick.get("lon"),
                                 "source": pick.get("source"), "why": pick.get("why", "Verified replacement")})
-            st.routes = await _compute_routes_async([item for item in st.itinerary
-                                                     if item.get("lat") is not None and item.get("lon") is not None])
+            st.routes = await _compute_routes_async(st.itinerary, request)
             st.budget = check_budget(st.itinerary, float(request["budget_total"]))
             st.log("revise", f"reselected slots: {sorted(revise_slots)}")
         attraction_slots = [slot for slot in revise_slots if ".attraction" in slot]
@@ -509,11 +561,10 @@ async def _run_tier2_async(request: dict) -> TripState:
                                     "cost": round(attraction.get("cost", 0) * party_size, 2),
                                     "lat": attraction.get("lat"), "lon": attraction.get("lon"),
                                     "source": attraction.get("source"), "why": "Verified replacement attraction"})
-            st.routes = await _compute_routes_async([item for item in st.itinerary
-                                                     if item.get("lat") is not None and item.get("lon") is not None])
+            st.routes = await _compute_routes_async(st.itinerary, request)
             st.budget = check_budget(st.itinerary, float(request["budget_total"]))
     st.meta = {"tier": 2, "elapsed_s": round(time.time() - t0, 2), "mock_llm": config.MOCK_MODE,
-               "data_backend": config.DATA_BACKEND, "tool_backends": last_backend_report(),
+               "data_backend": config.current_backend(), "tool_backends": last_backend_report(),
                "latency_budget_s": config.LATENCY_BUDGET_S,
                "llm_calls": client.telemetry["llm_calls"] if client else 0,
                "tokens": dict(client.telemetry) if client else {

@@ -105,14 +105,14 @@ def check_routes(st, request) -> list[str]:
     max_walk = float(request.get("max_walk_km", 2.0))
     travel_issues = {issue.get("slot") for issue in st.critic.get("issues", [])
                      if issue.get("type") == "travel"}
-    for route in st.routes:
-        if "km" not in route or "minutes" not in route:
-            fails.append(f"invalid route result: {route}")
-        if route.get("km", 0) > max_walk:
-            target = next((item["slot"] for item in st.itinerary
-                           if item.get("name") == route.get("to")), None)
-            if target not in travel_issues:
-                fails.append(f"missing travel Critic issue for {target}: {route}")
+    for day_route in st.routes:
+        for route in day_route.get("legs", []):
+            if "km" not in route or "minutes" not in route:
+                fails.append(f"invalid route result: {route}")
+            if route.get("km", 0) > max_walk:
+                target = route.get("to_slot")
+                if target not in travel_issues:
+                    fails.append(f"missing travel Critic issue for {target}: {route}")
     return fails
 
 
