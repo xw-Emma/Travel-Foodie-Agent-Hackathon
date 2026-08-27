@@ -9,6 +9,7 @@ DATA MODE: FOODIE_DATA_BACKEND=auto|live|local (see src/config.py).
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 
@@ -259,6 +260,245 @@ def _execute_restaurant_batch(
     return selected_by_slot, observed
 
 
+def _local_restaurant_tasks(request: dict) -> list[dict]:
+    days = int(request.get("days", 2))
+    budget = _budget_per_person(request, days)
+    return [{
+        "agent": "restaurant",
+        "slot": f"day{day}.{meal}",
+        "meal": meal,
+        "area_hint": "",
+        "budget_per_person": budget,
+        "constraints": {
+            "allergies": request.get("allergies", []),
+            "cuisines": request.get("cuisines", []),
+        },
+    } for day in range(1, days + 1) for meal in MEALS]
+
+
+def _pick_local_task(task: dict, request: dict, used: set[str]) -> tuple[dict | None, list[dict]]:
+    allergies = task["constraints"].get("allergies", [])
+    cuisines = task["constraints"].get("cuisines") or []
+    rows = search_restaurants(
+        city=request["city"], meal=task["meal"], cuisine=cuisines[0] if cuisines else None,
+        price_level_max=_max_price_level(task["budget_per_person"]),
+        exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
+    available = [row for row in rows if row["venue_id"] not in used]
+    pick = min(available, key=lambda row: float(row.get("avg_meal_cost", 0)), default=None)
+    return (dict(pick, why="Selected from verified local dataset.") if pick else None, rows)
+
+
+def _pick_live_task(client: FuelixClient, task: dict, request: dict) -> tuple[dict | None, list[dict]]:
+    try:
+        pick, rows = _pick_restaurant_with_tool_loop(client, task, request, set())
+        return pick, rows
+    except Exception:
+        return None, []
+
+
+async def _execute_restaurants_tier2(
+    tasks: list[dict], request: dict, client: FuelixClient | None,
+    reserved: set[str] | None = None,
+) -> tuple[dict[str, dict], dict[str, list[dict]], list[tuple[str, Exception]]]:
+    """Run independent restaurant searches concurrently without fail-fast gather."""
+    reserved = set(reserved or set())
+    if client is None:
+        worker = lambda task: _pick_local_task(task, request, reserved)
+    else:
+        worker = lambda task: _pick_live_task(client, task, request)
+    results = await asyncio.gather(
+        *(asyncio.to_thread(worker, task) for task in tasks),
+        return_exceptions=True,
+    )
+    selected: dict[str, dict] = {}
+    observed: dict[str, list[dict]] = {}
+    failures: list[tuple[str, Exception]] = []
+    used: set[str] = set(reserved)
+    for task, result in zip(tasks, results):
+        slot = task["slot"]
+        if isinstance(result, Exception):
+            failures.append((slot, result))
+            continue
+        pick, rows = result
+        observed[slot] = rows
+        replacement = pick if pick and pick["venue_id"] not in used else next(
+            (row for row in rows if row["venue_id"] not in used), None)
+        if replacement is None and pick:
+            replacement = pick
+        if replacement is None and rows:
+            replacement = rows[0]
+        if replacement:
+            selected[slot] = replacement
+            used.add(replacement["venue_id"])
+    return selected, observed, failures
+
+
+async def _execute_attractions_tier2(city: str, days: int) -> tuple[dict[str, dict], list[tuple[str, Exception]]]:
+    results = await asyncio.gather(
+        *(asyncio.to_thread(search_attractions, city, None, 2) for _ in range(days)),
+        return_exceptions=True,
+    )
+    selected: dict[str, dict] = {}
+    used: set[str] = set()
+    failures: list[tuple[str, Exception]] = []
+    for day, result in enumerate(results, 1):
+        slot = f"day{day}.attraction1"
+        if isinstance(result, Exception):
+            failures.append((slot, result))
+        elif result:
+            attraction = next((item for item in result if item["venue_id"] not in used), None)
+            if attraction:
+                selected[slot] = attraction
+                used.add(attraction["venue_id"])
+    return selected, failures
+
+
+def _compute_routes(items: list[dict]) -> list[dict]:
+    geo = [item for item in items if item.get("lat") is not None and item.get("lon") is not None]
+    return asyncio.run(_compute_routes_async(geo))
+
+
+async def _compute_routes_async(geo: list[dict]) -> list[dict]:
+    results = await asyncio.gather(
+        *(asyncio.to_thread(estimate_travel, a["lat"], a["lon"], b["lat"], b["lon"], "walk")
+          for a, b in zip(geo, geo[1:])),
+        return_exceptions=True,
+    )
+    routes = []
+    for (a, b), result in zip(zip(geo, geo[1:]), results):
+        if isinstance(result, Exception):
+            routes.append({"from": a["name"], "to": b["name"], "error": str(result)})
+        else:
+            routes.append({**result, "from": a["name"], "to": b["name"]})
+    return routes
+
+
+def _deterministic_critic(st: TripState, request: dict, days: int) -> dict:
+    issues = []
+    max_walk = float(request.get("max_walk_km", 2.0))
+    for route in st.routes:
+        if route.get("km", 0) > max_walk:
+            target = next((item["slot"] for item in st.itinerary if item["name"] == route["to"]), "")
+            if target:
+                issues.append({"slot": target, "type": "travel",
+                               "detail": f"{route['km']} km exceeds {max_walk} km walking limit",
+                               "suggestion": "Choose a closer verified venue."})
+    return {"verdict": "revise" if issues else "approved", "issues": issues}
+
+
+def _critic_with_llm(client: FuelixClient, st: TripState, request: dict) -> dict:
+    system = (config.PROMPTS_DIR / "critic.md").read_text(encoding="utf-8")
+    user = ("Review this verified itinerary and return STRICT JSON only. "
+            f"Original request: {json.dumps(request, sort_keys=True)}\n"
+            f"Itinerary: {json.dumps(st.itinerary, default=str)}\n"
+            f"Routes: {json.dumps(st.routes, default=str)}\n"
+            f"Budget: {json.dumps(st.budget, default=str)}")
+    message = client.chat(model=config.MODEL_ROUTING["critic"], system=system,
+                          user=user, temperature=0.1, max_tokens=1600)
+    return parse_json_reply(message.get("content", ""))
+
+
+async def _run_tier2_async(request: dict) -> TripState:
+    t0 = time.time()
+    days = int(request.get("days", 2))
+    party_size = max(1, int(request.get("party_size", 1)))
+    st = TripState(request=request)
+    client = None if config.MOCK_MODE or config.DATA_BACKEND == "local" else FuelixClient(timeout=30, max_retries=1)
+    tasks = _local_restaurant_tasks(request) if client is None else _plan_with_llm(client, request)["tasks"]
+    selected, observed, failures = await _execute_restaurants_tier2(tasks, request, client)
+    for task in tasks:
+        slot = task["slot"]
+        st.candidates[slot] = observed.get(slot, [])
+        pick = selected.get(slot)
+        if pick:
+            st.itinerary.append({"slot": slot, "venue_id": pick["venue_id"], "name": pick["name"],
+                                 "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
+                                 "lat": pick.get("lat"), "lon": pick.get("lon"),
+                                 "source": pick.get("source"), "why": pick.get("why", "Verified restaurant")})
+            st.log("restaurant", f"{slot}: chose {pick['name']} via {pick.get('source')}")
+        else:
+            st.log("restaurant", f"{slot}: failed; continued without this slot")
+    for slot, error in failures:
+        st.log("restaurant", f"{slot}: {type(error).__name__}: {error}")
+
+    attractions, attraction_failures = await _execute_attractions_tier2(request["city"], days)
+    for day in range(1, days + 1):
+        slot = f"day{day}.attraction1"
+        attraction = attractions.get(slot)
+        st.candidates[slot] = search_attractions(request["city"], limit=2) if attraction else []
+        if attraction:
+            st.itinerary.append({"slot": slot, "venue_id": attraction["venue_id"], "name": attraction["name"],
+                                 "cost": round(attraction.get("cost", 0) * party_size, 2),
+                                 "lat": attraction.get("lat"), "lon": attraction.get("lon"),
+                                 "source": attraction.get("source"), "why": "Top verified attraction"})
+            st.log("attraction", f"{slot}: {attraction['name']}")
+    for slot, error in attraction_failures:
+        st.log("attraction", f"{slot}: {type(error).__name__}: {error}")
+
+    st.routes = await _compute_routes_async([item for item in st.itinerary
+                                             if item.get("lat") is not None and item.get("lon") is not None])
+    st.log("route", f"{len(st.routes)} travel legs computed")
+    st.budget = check_budget(st.itinerary, float(request["budget_total"]))
+    for iteration in range(1, config.CRITIC_MAX_ITERATIONS + 1):
+        try:
+            critic = _deterministic_critic(st, request, days) if client is None else _critic_with_llm(client, st, request)
+        except Exception as error:
+            critic = _deterministic_critic(st, request, days)
+            st.log("critic", f"LLM failed ({type(error).__name__}); used deterministic check")
+        ok, bad = validate_critic_output(critic, days=days)
+        if not ok:
+            st.log("critic", f"Rejected malformed slots {bad}; stopping revision")
+            critic = {"verdict": "approved", "issues": [], "iteration": iteration}
+        critic["iteration"] = iteration
+        st.critic = critic
+        st.log("critic", f"verdict={critic.get('verdict')} issues={len(critic.get('issues', []))}")
+        if critic.get("verdict") != "revise" or not critic.get("issues") or iteration == config.CRITIC_MAX_ITERATIONS:
+            break
+        revise_slots = {issue["slot"] for issue in critic["issues"]}
+        restaurant_tasks = [task for task in tasks if task["slot"] in revise_slots]
+        if restaurant_tasks:
+            reserved = {item["venue_id"] for item in st.itinerary
+                         if item["slot"] not in revise_slots and item.get("venue_id")}
+            replacement, replacement_candidates, _ = await _execute_restaurants_tier2(
+                restaurant_tasks, request, client, reserved=reserved)
+            for task in restaurant_tasks:
+                slot = task["slot"]
+                st.candidates[slot] = replacement_candidates.get(slot, st.candidates.get(slot, []))
+                pick = replacement.get(slot)
+                old = next((item for item in st.itinerary if item["slot"] == slot), None)
+                if pick and old:
+                    old.update({"venue_id": pick["venue_id"], "name": pick["name"],
+                                "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
+                                "lat": pick.get("lat"), "lon": pick.get("lon"),
+                                "source": pick.get("source"), "why": pick.get("why", "Verified replacement")})
+            st.routes = await _compute_routes_async([item for item in st.itinerary
+                                                     if item.get("lat") is not None and item.get("lon") is not None])
+            st.budget = check_budget(st.itinerary, float(request["budget_total"]))
+            st.log("revise", f"reselected slots: {sorted(revise_slots)}")
+        attraction_slots = [slot for slot in revise_slots if ".attraction" in slot]
+        if attraction_slots:
+            replacement_results = await asyncio.gather(
+                *(asyncio.to_thread(search_attractions, request["city"], None, 2)
+                  for _ in attraction_slots),
+                return_exceptions=True,
+            )
+            for slot, result in zip(attraction_slots, replacement_results):
+                attraction = result[0] if isinstance(result, list) and result else None
+                current = next((item for item in st.itinerary if item["slot"] == slot), None)
+                if attraction and current:
+                    current.update({"venue_id": attraction["venue_id"], "name": attraction["name"],
+                                    "cost": round(attraction.get("cost", 0) * party_size, 2),
+                                    "lat": attraction.get("lat"), "lon": attraction.get("lon"),
+                                    "source": attraction.get("source"), "why": "Verified replacement attraction"})
+            st.routes = await _compute_routes_async([item for item in st.itinerary
+                                                     if item.get("lat") is not None and item.get("lon") is not None])
+            st.budget = check_budget(st.itinerary, float(request["budget_total"]))
+    st.meta = {"tier": 2, "elapsed_s": round(time.time() - t0, 2), "mock_llm": config.MOCK_MODE,
+               "data_backend": config.DATA_BACKEND, "tool_backends": last_backend_report(),
+               "latency_budget_s": config.LATENCY_BUDGET_S}
+    return st
+
+
 # ------------------------------------------------------- TIER 1
 def run_tier1(request: dict) -> TripState:
     """
@@ -361,75 +601,8 @@ def run_tier1(request: dict) -> TripState:
 
 # ------------------------------------------------------- TIER 2
 def run_tier2(request: dict) -> TripState:
-    """
-    Strong-team ceiling. This starter ships a WORKING skeleton:
-      - Attraction picks (1 per day)
-      - Route legs between consecutive stops
-      - One Critic pass with slot-guard demo hooks
-
-    Teams should: (a) parallelize with asyncio.gather, (b) replace mock Critic
-    with a real Fuel iX call + revision loop (max 2), (c) add Streamlit UI.
-    """
-    st = run_tier1(request)
-    days = int(request.get("days", 2))
-    city = request["city"]
-    party_size = max(1, int(request.get("party_size", 1)))
-
-    # Attractions
-    for d in range(1, days + 1):
-        slot = f"day{d}.attraction1"
-        attrs = search_attractions(city, limit=2)
-        st.candidates[slot] = attrs
-        if attrs:
-            a = attrs[0]
-            st.itinerary.append({
-                "slot": slot, "venue_id": a["venue_id"], "name": a["name"],
-                "cost": round(a.get("cost", 0) * party_size, 2),
-                "lat": a.get("lat"), "lon": a.get("lon"),
-                "source": a.get("source"),
-                "why": "Top attraction near the food plan",
-            })
-            st.log("attraction", f"{slot}: {a['name']}")
-
-    # Routes between consecutive geo-tagged stops
-    geo = [it for it in st.itinerary if it.get("lat") is not None and it.get("lon") is not None]
-    legs = []
-    for i in range(len(geo) - 1):
-        a, b = geo[i], geo[i + 1]
-        leg = estimate_travel(a["lat"], a["lon"], b["lat"], b["lon"], mode="walk")
-        leg["from"] = a["name"]
-        leg["to"] = b["name"]
-        legs.append(leg)
-    st.routes = legs
-    st.log("route", f"{len(legs)} travel legs computed")
-
-    # Critic (mock pass — teams replace with LLM + revision loop)
-    issues = []
-    # Demo: if any chosen venue details say closed Saturday and trip implies weekend
-    for it in st.itinerary:
-        if not it.get("venue_id"):
-            continue
-        details = get_venue_details(it["venue_id"])
-        hours = details.get("hours") or {}
-        if isinstance(hours, dict) and hours.get("sat", {}).get("open") is None and "sat" in hours:
-            # local-dataset closed-Saturday trap
-            if details.get("source") == "local_dataset":
-                issues.append({"slot": it["slot"], "type": "hours",
-                               "detail": f"{it['name']} closed Saturday"})
-    critic = {"verdict": "revise" if issues else "approved", "issues": issues, "iteration": 1}
-    ok, bad = validate_critic_output(critic, days=days)
-    if not ok:
-        st.log("critic", f"Rejected malformed slots {bad}; would re-ask Critic")
-        critic = {"verdict": "approved", "issues": [], "iteration": 1,
-                  "note": "slot-guard rejected bad IDs"}
-    st.critic = critic
-    st.log("critic", f"verdict={critic['verdict']} issues={len(critic['issues'])}")
-
-    # Recompute budget including attractions
-    st.budget = check_budget(st.itinerary, float(request["budget_total"]))
-    st.meta["tier"] = 2
-    st.meta["tool_backends"] = last_backend_report()
-    return st
+    """Run the asynchronous Plan -> Execute -> Check -> Revise -> Ship flow."""
+    return asyncio.run(_run_tier2_async(request))
 
 
 # ------------------------------------------------------- demo entry

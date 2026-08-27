@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.orchestrator import run_tier1  # noqa: E402
+from src.orchestrator import run_tier2  # noqa: E402
 from src import config  # noqa: E402
 
 SCENARIOS = Path(__file__).with_name("scenarios.json")
@@ -59,7 +59,7 @@ def main() -> None:
     scenarios = json.loads(SCENARIOS.read_text())
     all_ok = True
     for sc in scenarios:
-        st = run_tier1(sc["request"])
+        st = run_tier2(sc["request"])
         print(f"\n== {sc['id']} ==")
         for name in sc.get("checks", []):
             fails = CHECKS[name](st, sc["request"])
