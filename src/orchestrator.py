@@ -17,7 +17,7 @@ from datetime import date
 from . import config
 from .fuelix_client import FuelixClient, parse_json_reply, run_tool_loop
 from .state import TripState, MEALS, TOOL_SCHEMAS, is_valid_slot, slot_ids
-from .tools import (TOOL_IMPLS, search_restaurants, get_venue_details,
+from .tools import (TOOL_IMPLS, reset_backend_report, search_restaurants, get_venue_details,
                     search_attractions, estimate_travel, check_budget,
                     last_backend_report)
 
@@ -469,6 +469,7 @@ def _critic_with_llm(client: FuelixClient, st: TripState, request: dict) -> dict
 
 async def _run_tier2_async(request: dict) -> TripState:
     t0 = time.time()
+    reset_backend_report()
     days = int(request.get("days", 2))
     party_size = max(1, int(request.get("party_size", 1)))
     st = TripState(request=request)
@@ -582,11 +583,12 @@ def run_tier1(request: dict) -> TripState:
     TOOL layer regardless.
     """
     t0 = time.time()
+    reset_backend_report()
     st = TripState(request=request)
     days = int(request.get("days", 2))
     party_size = max(1, int(request.get("party_size", 1)))
 
-    if config.MOCK_MODE or config.DATA_BACKEND == "local":
+    if config.MOCK_MODE or config.current_backend() == "local":
         per_day = float(request["budget_total"]) / days
         st.plan = {
             "days": days,
@@ -655,7 +657,7 @@ def run_tier1(request: dict) -> TripState:
     st.itinerary = chosen
     formatted = ""
     telemetry = {"llm_calls": 0, "input_tokens": 0, "output_tokens": 0}
-    if not config.MOCK_MODE and config.DATA_BACKEND != "local":
+    if not config.MOCK_MODE and config.current_backend() != "local":
         formatted = _format_with_llm(client, st)
         telemetry = dict(client.telemetry)
         st.log("formatter", "Formatted the verified itinerary with Fuel iX")
@@ -663,7 +665,7 @@ def run_tier1(request: dict) -> TripState:
         "tier": 1,
         "elapsed_s": round(time.time() - t0, 2),
         "mock_llm": config.MOCK_MODE,
-        "data_backend": config.DATA_BACKEND,
+        "data_backend": config.current_backend(),
         "tool_backends": last_backend_report(),
         "latency_budget_s": config.LATENCY_BUDGET_S,
         "llm_calls": telemetry["llm_calls"],

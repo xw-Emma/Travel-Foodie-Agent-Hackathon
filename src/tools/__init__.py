@@ -7,34 +7,71 @@ swap as a one-line config change (FOODIE_DATA_BACKEND).
 """
 from __future__ import annotations
 
+import contextvars
+
 from .. import config
 from . import budget as _budget
 from . import local_catalog as _local
 from . import places_live as _places
 from . import routes_live as _routes
 
-# Telemetry visible in TripState.meta
-_LAST_BACKEND: dict[str, str] = {"restaurants": "n/a", "attractions": "n/a",
-                                  "travel": "n/a", "fallback_events": 0}
+
+def _new_report() -> dict:
+    return {"restaurants": "n/a", "attractions": "n/a", "travel": "n/a",
+            "live_decision": "not_evaluated", "fallback_events": 0}
+
+
+# Telemetry visible in TripState.meta. Held in a ContextVar rather than a module
+# global so concurrent runs cannot overwrite each other's report and so
+# fallback_events cannot accumulate across requests in a long-lived server.
+# asyncio.gather and asyncio.to_thread both copy the context, and the dict is
+# mutated in place, so a Tier 2 run's parallel executors all report into the
+# same per-run dict.
+_REPORT: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
+    "backend_report", default=None)
+
+
+def _report() -> dict:
+    report = _REPORT.get()
+    if report is None:
+        report = _new_report()
+        _REPORT.set(report)
+    return report
+
+
+def reset_backend_report():
+    """Start a fresh per-run report. Call once at the top of every run."""
+    return _REPORT.set(_new_report())
 
 
 def last_backend_report() -> dict:
-    return dict(_LAST_BACKEND)
+    return dict(_report())
+
+
+def _live_decision() -> tuple[bool, str]:
+    """Return (use live APIs, why). The reason disambiguates 'no key' from
+    'local forced' — both otherwise produce an identical backend report."""
+    backend = config.current_backend()
+    if backend == "local":
+        return False, "forced_local"
+    if backend == "live":
+        return True, "forced_live"
+    if not config.LIVE_DATA_AVAILABLE:
+        return False, "auto_no_api_key"
+    return True, "auto_key_present"
 
 
 def _want_live() -> bool:
-    backend = config.current_backend()
-    if backend == "local":
-        return False
-    if backend == "live":
-        return True
-    return config.LIVE_DATA_AVAILABLE  # auto
+    want, reason = _live_decision()
+    _report()["live_decision"] = reason
+    return want
 
 
 def _record(kind: str, source: str, fell_back: bool = False) -> None:
-    _LAST_BACKEND[kind] = source
+    report = _report()
+    report[kind] = source
     if fell_back:
-        _LAST_BACKEND["fallback_events"] = int(_LAST_BACKEND["fallback_events"]) + 1
+        report["fallback_events"] = int(report["fallback_events"]) + 1
 
 
 # ---------------------------------------------------------------- restaurants

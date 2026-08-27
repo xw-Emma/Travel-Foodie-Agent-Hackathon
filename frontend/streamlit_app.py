@@ -28,7 +28,7 @@ def _auth_headers() -> dict:
     return h
 
 
-def parse_prefs(text: str) -> dict:
+def parse_prefs(text: str, tier: int, data_backend: str) -> dict:
     """Lightweight NL → preference JSON (teams can replace with a Fuel iX call later)."""
     lower = text.lower()
     days = 2
@@ -57,8 +57,8 @@ def parse_prefs(text: str) -> dict:
         "party_size": 2,
         "cuisines": cuisines,
         "allergies": allergies,
-        "tier": 1,
-        "data_backend": "local" if allergies else "auto",
+        "tier": tier,
+        "data_backend": data_backend,
     }
 
 
@@ -78,6 +78,17 @@ st.title("Travel Foodie Agent - Deployment UI")
 st.caption("Thin HTTP client for the FastAPI backend. For the full local Tier 2 UI, run app/streamlit_app.py.")
 st.caption(f"Backend: {BACKEND_URL}")
 
+with st.sidebar:
+    st.header("Plan settings")
+    tier = st.selectbox("Agent tier", [2, 1], index=0)
+    data_backend = st.selectbox("Data backend", ["auto", "live", "local"], index=0)
+    if data_backend != "local":
+        st.warning(
+            "Live mode infers allergen risk from cuisine type only "
+            "(Places API has no allergen fields). Use 'local' for graded "
+            "allergen scenarios, where flags are explicit ground truth."
+        )
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -90,7 +101,7 @@ if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-    prefs = parse_prefs(prompt)
+    prefs = parse_prefs(prompt, tier, data_backend)
     with st.chat_message("assistant"):
         with st.spinner("Planning…"):
             try:
