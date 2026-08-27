@@ -14,7 +14,7 @@ import json
 import time
 from datetime import date
 
-from . import config
+from . import config, demo_mode
 from .fuelix_client import FuelixClient, parse_json_reply, run_tool_loop
 from .state import TripState, MEALS, TOOL_SCHEMAS, is_valid_slot, slot_ids
 from .tools import (TOOL_IMPLS, MODE_SPEED_KMH, compute_day_route, haversine_km,
@@ -384,12 +384,13 @@ def _pick_local_task(task: dict, request: dict, used: set[str],
 
     cuisine = cuisines[0] if cuisines else None
     radius = _within_km(max_leg_minutes, mode) if anchor else None
-    rows = search(cuisine, radius)
+    opening = _slot_opening(request, task["slot"])
+    rows = _drop_closed(search(cuisine, radius), opening)
     # Widen only as far as needed: drop the radius first, the cuisine last.
     if anchor and not [row for row in rows if row["venue_id"] not in used]:
-        rows = search(cuisine, None)
+        rows = _drop_closed(search(cuisine, None), opening)
     if cuisines and not [row for row in rows if row["venue_id"] not in used]:
-        rows = search(None, None)
+        rows = _drop_closed(search(None, None), opening)
 
     pick = best_candidate(
         rows, used=used,
@@ -473,10 +474,11 @@ async def _execute_restaurants_tier2(
         if slot in selected:
             continue
         allergies = task["constraints"].get("allergies", [])
-        rows = search_restaurants(
+        rows = _drop_closed(search_restaurants(
             city=request["city"], meal=task["meal"], cuisine=None,
             price_level_max=_max_price_level(task["budget_per_person"]),
-            exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
+            exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20),
+            _slot_opening(request, slot))
         observed[slot] = rows
         replacement = choose(rows, task)
         if replacement:
@@ -495,12 +497,12 @@ def _attraction_limit(days: int, attractions_per_day: int = 1) -> int:
 
 
 async def _execute_attractions_tier2(
-    city: str, days: int, category: str | None = None,
+    request: dict, days: int, category: str | None = None,
     attractions_per_day: int = 1,
 ) -> tuple[dict[str, dict], list[tuple[str, Exception]]]:
     limit = _attraction_limit(days, attractions_per_day)
     results = await asyncio.gather(
-        *(asyncio.to_thread(search_attractions, city, category, limit)
+        *(asyncio.to_thread(search_attractions, request["city"], category, limit)
           for _ in range(days)),
         return_exceptions=True,
     )
@@ -511,11 +513,15 @@ async def _execute_attractions_tier2(
         slot = f"day{day}.attraction1"
         if isinstance(result, Exception):
             failures.append((slot, result))
-        elif result:
-            attraction = next((item for item in result if item["venue_id"] not in used), None)
-            if attraction:
-                selected[slot] = attraction
-                used.add(attraction["venue_id"])
+            continue
+        # Museums close on Mondays too - the dataset has a fixture for exactly
+        # that (a002), so attractions get the same opening-hours filter as meals.
+        open_now = _drop_closed(result or [], _slot_opening(request, slot))
+        attraction = next((item for item in open_now
+                           if item["venue_id"] not in used), None)
+        if attraction:
+            selected[slot] = attraction
+            used.add(attraction["venue_id"])
     return selected, failures
 
 
@@ -661,6 +667,32 @@ ATTRACTION_TIME = "14:00"
 def _day_number(slot: str) -> int | None:
     head = str(slot).split(".", 1)[0]
     return int(head[3:]) if head.startswith("day") and head[3:].isdigit() else None
+
+
+def _slot_opening(request: dict, slot: str) -> tuple[str, str] | None:
+    """(weekday, hh:mm) a slot is visited, or None when no date was given."""
+    day = _day_number(slot)
+    if day is None:
+        return None
+    _, weekday = _day_label(request, day)
+    if not weekday:
+        return None
+    return weekday, MEAL_TIMES.get(slot.split(".", 1)[-1], ATTRACTION_TIME)
+
+
+def _drop_closed(rows: list[dict], opening: tuple[str, str] | None) -> list[dict]:
+    """Remove venues shut at the time this slot is visited.
+
+    Detecting a closed venue is only half of it: without this the revision
+    re-picks from the same pool, lands on another closed venue, and the warning
+    survives every iteration. Unknown hours (the live shape) stay in - is_open_at
+    answers None there, and refusing everything unverifiable would empty the pool.
+    """
+    if opening is None:
+        return rows
+    weekday, hhmm = opening
+    return [row for row in rows
+            if is_open_at(get_venue_details(row["venue_id"]), weekday, hhmm) is not False]
 
 
 def _hours_issues(st: TripState, request: dict) -> list[dict]:
@@ -915,13 +947,30 @@ def _critic_with_llm(client: FuelixClient, st: TripState, request: dict) -> dict
 
 
 async def _run_tier2_async(request: dict) -> TripState:
+    if config.DEMO_MODE:
+        return demo_mode.replay(request, tier=2)
     t0 = time.time()
     reset_backend_report()
     days = int(request.get("days", 2))
     party_size = max(1, int(request.get("party_size", 1)))
     st = TripState(request=request)
     client = None if config.MOCK_MODE or config.current_backend() == "local" else FuelixClient(timeout=30, max_retries=1)
-    tasks = _local_restaurant_tasks(request) if client is None else _plan_with_llm(client, request)["tasks"]
+    llm_fallback = None
+    if client is None:
+        tasks = _local_restaurant_tasks(request)
+    else:
+        try:
+            tasks = _plan_with_llm(client, request)["tasks"]
+        except Exception as error:  # noqa: BLE001 - the demo must still produce a plan
+            # FOODIE_DATA_BACKEND governs the DATA backend; the LLM is a separate
+            # axis with no cache behind it, so an unreachable Fuel iX used to take
+            # the whole run down even though every tool still worked. Drop to the
+            # deterministic pipeline instead of returning nothing.
+            llm_fallback = f"{type(error).__name__}: {str(error)[:120]}"
+            st.log("planner", f"Fuel iX unavailable ({type(error).__name__}); "
+                              "planned deterministically without the LLM")
+            client = None
+            tasks = _local_restaurant_tasks(request)
     selected, observed, failures = await _execute_restaurants_tier2(tasks, request, client)
     for task in tasks:
         slot = task["slot"]
@@ -938,7 +987,8 @@ async def _run_tier2_async(request: dict) -> TripState:
     for slot, error in failures:
         st.log("restaurant", f"{slot}: {type(error).__name__}: {error}")
 
-    attractions, attraction_failures = await _execute_attractions_tier2(request["city"], days)
+    attractions, attraction_failures = await _execute_attractions_tier2(
+        request, days, attractions_per_day=int(request.get("attractions_per_day", 1) or 1))
     for day in range(1, days + 1):
         slot = f"day{day}.attraction1"
         attraction = attractions.get(slot)
@@ -1003,7 +1053,10 @@ async def _run_tier2_async(request: dict) -> TripState:
                                 "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
                                 "lat": pick.get("lat"), "lon": pick.get("lon"),
                                 "source": pick.get("source"), "why": pick.get("why", "Verified replacement")})
+            # Same pair as the initial pass: a revision can leave the plan over
+            # budget, or free up room it should then spend on quality.
             _repair_budget(st, request, party_size)
+            _upgrade_within_budget(st, request, party_size)
             st.routes = await _compute_routes_async(st.itinerary, request)
             st.budget = check_budget(st.itinerary, float(request["budget_total"]))
             st.log("revise", f"reselected slots: {sorted(revise_slots)}")
@@ -1024,7 +1077,9 @@ async def _run_tier2_async(request: dict) -> TripState:
                 reserved_attractions = {item["venue_id"] for item in st.itinerary
                                         if item["slot"] not in attraction_slots
                                         and ".attraction" in item["slot"]}
-                attraction = next((item for item in (result if isinstance(result, list) else [])
+                open_now = _drop_closed(result if isinstance(result, list) else [],
+                                        _slot_opening(request, slot))
+                attraction = next((item for item in open_now
                                    if item["venue_id"] not in reserved_attractions), None)
                 current = next((item for item in st.itinerary if item["slot"] == slot), None)
                 if attraction and current:
@@ -1048,6 +1103,7 @@ async def _run_tier2_async(request: dict) -> TripState:
                "data_backend": config.current_backend(), "tool_backends": last_backend_report(),
                "latency_budget_s": config.LATENCY_BUDGET_S,
                "unresolved_issues": unresolved,
+               "llm_fallback": llm_fallback,
                "llm_calls": client.telemetry["llm_calls"] if client else 0,
                "tokens": dict(client.telemetry) if client else {
                    "llm_calls": 0, "input_tokens": 0, "output_tokens": 0,
@@ -1063,13 +1119,47 @@ def run_tier1(request: dict) -> TripState:
     (see prompts/ and BUILD guide). Allergen exclusion is enforced at the
     TOOL layer regardless.
     """
+    if config.DEMO_MODE:
+        return demo_mode.replay(request, tier=1)
     t0 = time.time()
     reset_backend_report()
     st = TripState(request=request)
     days = int(request.get("days", 2))
     party_size = max(1, int(request.get("party_size", 1)))
 
-    if config.MOCK_MODE or config.current_backend() == "local":
+    client = None
+    chosen = None
+    llm_fallback = None
+    if not (config.MOCK_MODE or config.current_backend() == "local"):
+        try:
+            client = FuelixClient(timeout=30, max_retries=1)
+            st.plan = _plan_with_llm(client, request)
+            st.log("planner", f"Created {len(st.plan['tasks'])} validated restaurant tasks")
+            selected_by_slot, observed = _execute_restaurant_batch(
+                client, st.plan["tasks"], request)
+            chosen = []
+            for task in st.plan["tasks"]:
+                pick = selected_by_slot.get(task["slot"])
+                candidates = observed.get(task["slot"], [])
+                st.candidates[task["slot"]] = candidates
+                if pick is None:
+                    raise ValueError(f"No verified candidate for {task['slot']}")
+                chosen.append({
+                    "slot": task["slot"], "venue_id": pick["venue_id"],
+                    "name": pick["name"],
+                    "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
+                    "lat": pick.get("lat"), "lon": pick.get("lon"),
+                    "source": pick.get("source"), "why": pick["why"],
+                })
+                st.log("restaurant", f"{task['slot']}: chose {pick['name']} via {pick.get('source')}")
+        except Exception as error:  # noqa: BLE001 - see the Tier 2 note above
+            llm_fallback = f"{type(error).__name__}: {str(error)[:120]}"
+            st.log("planner", f"Fuel iX unavailable ({type(error).__name__}); "
+                              "planned deterministically without the LLM")
+            client = None
+            chosen = None
+
+    if chosen is None:
         per_day = float(request["budget_total"]) / days
         st.plan = {
             "days": days,
@@ -1114,27 +1204,6 @@ def run_tier1(request: dict) -> TripState:
                     "why": f"Top-rated {pick.get('cuisine', '')} match under constraints",
                 })
                 st.log("restaurant", f"{task['slot']}: chose {pick['name']} via {pick.get('source')}")
-    else:
-        client = FuelixClient(timeout=30, max_retries=1)
-        st.plan = _plan_with_llm(client, request)
-        st.log("planner", f"Created {len(st.plan['tasks'])} validated restaurant tasks")
-        selected_by_slot, observed = _execute_restaurant_batch(
-            client, st.plan["tasks"], request)
-        chosen = []
-        for task in st.plan["tasks"]:
-            pick = selected_by_slot.get(task["slot"])
-            candidates = observed.get(task["slot"], [])
-            st.candidates[task["slot"]] = candidates
-            if pick is None:
-                raise ValueError(f"No verified candidate for {task['slot']}")
-            chosen.append({
-                "slot": task["slot"], "venue_id": pick["venue_id"],
-                "name": pick["name"],
-                "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
-                "lat": pick.get("lat"), "lon": pick.get("lon"),
-                "source": pick.get("source"), "why": pick["why"],
-            })
-            st.log("restaurant", f"{task['slot']}: chose {pick['name']} via {pick.get('source')}")
 
     # 3) BUDGET — pure Python
     st.budget = check_budget(chosen, float(request["budget_total"]))
@@ -1144,7 +1213,7 @@ def run_tier1(request: dict) -> TripState:
     st.itinerary = chosen
     formatted = ""
     telemetry = {"llm_calls": 0, "input_tokens": 0, "output_tokens": 0}
-    if not config.MOCK_MODE and config.current_backend() != "local":
+    if client is not None:
         formatted = _format_with_llm(client, st)
         telemetry = dict(client.telemetry)
         st.log("formatter", "Formatted the verified itinerary with Fuel iX")
@@ -1156,6 +1225,7 @@ def run_tier1(request: dict) -> TripState:
         "tool_backends": last_backend_report(),
         "latency_budget_s": config.LATENCY_BUDGET_S,
         "llm_calls": telemetry["llm_calls"],
+        "llm_fallback": llm_fallback,
         "tokens": telemetry,
         "formatted": formatted,
     }

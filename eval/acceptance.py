@@ -214,7 +214,14 @@ def check_llm_calls(st, request) -> list[str]:
     calls = int(st.meta.get("llm_calls", -1))
     if config.DATA_BACKEND == "local":
         return [f"local mode made {calls} LLM calls"] if calls != 0 else []
-    return ["real backend made no LLM calls"] if calls <= 0 else []
+    if calls > 0:
+        return []
+    # Say WHY there were none: a Fuel iX outage degrades to the deterministic
+    # pipeline on purpose, and that is a very different finding from the LLM
+    # having quietly done nothing.
+    fallback = st.meta.get("llm_fallback")
+    return [f"fell back to the deterministic pipeline ({fallback})" if fallback
+            else "real backend made no LLM calls"]
 
 
 def check_elapsed(st, request) -> list[str]:

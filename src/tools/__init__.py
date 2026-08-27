@@ -207,6 +207,48 @@ haversine_km = _local.haversine_km
 MODE_SPEED_KMH = _local.MODE_SPEED_KMH
 
 
+# -------------------------------------------------------------------- origin
+# City centres, used when an address cannot be resolved. Being roughly right
+# beats failing the whole plan over a typo in a hotel name.
+CITY_CENTRES = {
+    "calgary": (51.0447, -114.0719),
+    "vancouver": (49.2827, -123.1207),
+    "montreal": (45.5019, -73.5674),
+}
+
+
+def resolve_origin(address: str, city: str) -> dict:
+    """Turn a typed address into {lat, lon, label, resolved, source}.
+
+    Uses the Places searchText client already in use, so no new API to enable.
+
+    WHY NOT BROWSER GEOLOCATION AS THE PRIMARY PATH: Streamlit has no built-in
+    geolocation, third-party components need HTTPS, and the permission dialog
+    is a reliable way to lose a live demo when it is denied or simply ignored.
+    Typing an address always works.
+    """
+    label = (address or "").strip()
+    if label and _want_live():
+        try:
+            rows = _places.search_restaurants(city, "", limit=1, cuisine=None,
+                                              area=label)
+            hit = next((row for row in rows if row.get("lat") is not None), None)
+            if hit:
+                _record("origin", "google_places")
+                return {"lat": hit["lat"], "lon": hit["lon"], "label": label,
+                        "resolved": True, "source": "google_places"}
+        except Exception as exc:  # noqa: BLE001 - fall back to the city centre
+            _record("origin", f"fallback_after_error:{type(exc).__name__}", True)
+    centre = CITY_CENTRES.get((city or "").strip().lower())
+    if centre is None:
+        return {"lat": None, "lon": None, "label": label or "Unknown",
+                "resolved": False, "source": "unresolved"}
+    _record("origin", "city_centre")
+    return {"lat": centre[0], "lon": centre[1],
+            "label": label or f"{city} centre", "resolved": not label,
+            "source": "city_centre"}
+
+
 # Convenience map for the Fuel iX tool loop
 TOOL_IMPLS = {
     "search_restaurants": search_restaurants,

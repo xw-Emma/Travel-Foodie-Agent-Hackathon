@@ -13,6 +13,7 @@ Every phase ends with a **GATE** — a command whose output you can paste into t
 | Phase | What | Time | Gate |
 | :---- | :---- | :---- | :---- |
 | 0 | Fix the kit before you build on it | 45 min | `seed.py` prints 60/25 and the CSVs are unchanged |
+| 0 | **Demo-day insurance** | 10 min | `python scripts\warm_cache.py --golden` on the demo machine, then rehearse the ladder: `auto` → `local` → `FOODIE_DEMO_MODE=on`. The cache is gitignored and does not travel, and an untested fallback is not a fallback. |
 | 1 | Local environment \+ M0 | 60 min | `preflight.py` all green, one live Places call |
 | 2 | Tier 1 — real Fuel iX agent | 3 h | ≥4 LLM calls, ≥1 live Places call, 0 allergen leaks, \<60 s |
 | 3 | Tier 2 — parallel \+ Critic loop | 3 h | `acceptance.py` passes S1–S3, critic bounded at 2 |
@@ -1150,12 +1151,17 @@ python data\seed.py
 # run
 python -m src.orchestrator                       # both tiers, console
 python app\cli.py --tier 2 --json                # CLI UI
-streamlit run app\streamlit_app.py               # web UI
+streamlit run app\streamlit_app.py               # web UI (NOT frontend\)
+uvicorn app.api:app --port 8080                  # backend; GET /diagnostics
 
 # force backends
 $env:FOODIE_DATA_BACKEND="local"                 # offline insurance
 $env:FOODIE_DATA_BACKEND="live"                  # fail loudly, no fallback
 $env:FOODIE_DATA_BACKEND="auto"                  # try live, fall back
+
+# demo-day insurance (run on the machine you will demo from)
+python scripts\warm_cache.py --golden            # warm cache + freeze a plan
+$env:FOODIE_DEMO_MODE="on"                       # replay data\golden_plan.json
 
 # grade
 python scripts\smoke_test.py

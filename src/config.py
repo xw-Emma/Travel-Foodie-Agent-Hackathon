@@ -75,6 +75,14 @@ ROUTES_BASE_URL = "https://routes.googleapis.com/directions/v2:computeRoutes"
 DATA_BACKEND = os.environ.get("FOODIE_DATA_BACKEND", "auto").lower()  # live|local|auto
 CACHE_ENABLED = os.environ.get("FOODIE_CACHE", "on").lower() != "off"
 
+# Last rung of the demo-day fallback ladder (live -> local -> demo). Replays a
+# frozen plan captured from a good run, for when both the APIs and the local
+# dataset are unusable on stage. It is deliberately loud: every replayed plan is
+# marked in the trace, in meta, and in the UI, because a frozen plan presented
+# as a live one would misrepresent what the system did.
+DEMO_MODE = os.environ.get("FOODIE_DEMO_MODE", "off").lower() == "on"
+GOLDEN_PLAN_PATH = DATA_DIR / "golden_plan.json"
+
 
 def current_backend() -> str:
     """Return the request-local backend override, or the process default."""

@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 
-from src import config
+from src import config, diagnostics
 from src.orchestrator import run_tier1, run_tier2
 from src.request_model import TripRequest
 
@@ -25,6 +25,15 @@ def health() -> dict[str, Any]:
     }
 
 
+@app.get("/diagnostics")
+def diagnose(probe: bool = False) -> dict[str, Any]:
+    """Which backend will run, and whether the Google APIs actually answer.
+
+    `probe=true` makes two real (billed) calls, so it is opt-in.
+    """
+    return diagnostics.snapshot(probe_apis=probe)
+
+
 @app.post("/plan")
 def plan(body: TripRequest) -> dict[str, Any]:
     token = config.set_backend_override(body.data_backend)
@@ -37,9 +46,14 @@ def plan(body: TripRequest) -> dict[str, Any]:
         config._backend_override.reset(token)
 
     return {
-        "request": body.model_dump(mode="json"),
+        "request": request,
+        "day_labels": body.day_labels,
         "itinerary": st.itinerary,
+        # Routes carry the per-leg geometry the map draws, so an HTTP client can
+        # render exactly what the in-process UI renders.
+        "routes": st.routes,
         "budget": st.budget,
+        "critic": st.critic,
         "trace": st.trace,
         "meta": st.meta,
         "tool_backends": (st.meta or {}).get("tool_backends"),

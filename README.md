@@ -19,21 +19,58 @@ python -m src.orchestrator
 You should see: allergen leaks `[]`, budget `ok`, Critic slot-guard accepting a
 valid slot and rejecting a malformed one.
 
-## Web UI entrypoints
-
-The primary browser UI is `app/streamlit_app.py`. It runs the orchestrator
-in-process and exposes Tier 1/Tier 2, backend selection, itinerary, routes,
-map, trace, and debug state.
-
-Start the primary UI with:
+## When something is wrong, run this first
 
 ```powershell
-streamlit run app/streamlit_app.py
+python scripts\preflight.py
 ```
 
-The `frontend/` directory contains a separate thin HTTP client UI for the
-FastAPI/Cloud Run deployment. It is not the primary local demo UI. For local
-development and Tier 2 demonstrations, always use `app/streamlit_app.py`.
+It names *which* of proxy / Fuel iX / Places / Routes is broken instead of
+leaving you to guess. The same picture is in the UI sidebar and at
+`GET /diagnostics`.
+
+## Web UI entrypoints
+
+The primary browser UI is `app/streamlit_app.py` — **not** `frontend/`. It runs
+the orchestrator in-process and exposes Tier 1/Tier 2, backend selection, a
+day-by-day itinerary with travel times and `source` badges, a pydeck map with
+one route line per day, the agent trace, and a diagnostics panel.
+
+```powershell
+python data\seed.py
+streamlit run app\streamlit_app.py
+```
+
+`frontend/streamlit_app.py` is the thin HTTP client for the FastAPI/Cloud Run
+deployment. It shows the same screens — both import `app/ui_components.py`, so
+they cannot drift — but plans through the backend, keeping the API keys
+server-side. Use `app/streamlit_app.py` for local development and demos.
+
+Every itinerary row carries a `source` badge (`google_places` vs
+`local_dataset`), which is the quickest way to see which data path actually ran.
+
+## Demo-day fallback ladder
+
+Three rungs, each one rehearsable. Do this before demo day, on the machine you
+will demo from — the cache is gitignored and does not travel.
+
+```powershell
+python scripts\warm_cache.py --golden      # warm the cache + freeze a plan
+```
+
+| Rung | Command | Survives |
+|---|---|---|
+| Live | `FOODIE_DATA_BACKEND=live` | normal conditions |
+| **Auto** | `FOODIE_DATA_BACKEND=auto` | a dead network: Google falls back to the offline dataset, and an unreachable Fuel iX falls back to the deterministic pipeline |
+| Local | `FOODIE_DATA_BACKEND=local` | anything — no network at all, and no LLM call is made |
+| Demo | `FOODIE_DEMO_MODE=on` | replays `data/golden_plan.json`, loudly labelled in the UI |
+
+`live` deliberately fails loudly on an uncached call — that is what it is for.
+For resilience on stage use `auto` or `local`.
+
+Note the cache only covers **Google** responses; Fuel iX calls are not cached.
+That is why `auto` falls back to the deterministic planner rather than relying
+on a warm cache for the LLM.
 
 ## Three tiers
 

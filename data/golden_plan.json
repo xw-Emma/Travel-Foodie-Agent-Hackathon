@@ -1,0 +1,1686 @@
+{
+  "captured_at": "2026-08-27T11:13:52-04:00",
+  "request": {
+    "city": "Calgary",
+    "days": 2,
+    "budget_total": 500,
+    "party_size": 2,
+    "cuisines": [
+      "international"
+    ],
+    "allergies": [
+      "peanut"
+    ],
+    "max_leg_minutes": 25.0,
+    "max_daily_travel_minutes": 120.0,
+    "transport_mode": "WALK"
+  },
+  "plan": {},
+  "itinerary": [
+    {
+      "slot": "day1.breakfast",
+      "venue_id": "ChIJgU0yeMBvcVMR__In07rjQjs",
+      "name": "Wafflato | Cafe & Lounge",
+      "cost": 60.0,
+      "lat": 51.043721,
+      "lon": -114.0836927,
+      "source": "google_places",
+      "why": "Wafflato is the top-rated venue in the results (4.8 \u2b50, 673 reviews), confirmed peanut_risk: false \u2014 safe for your allergy. Its globally-inspired waffle and caf\u00e9 menu aligns well with an international cuisine preference, and it sits at price_level 2, fitting the $20 budget bracket. Note: verify_with_restaurant=true (Google Places source), so it's advisable to confirm current opening hours and menu pricing directly with the restaurant before visiting."
+    },
+    {
+      "slot": "day1.lunch",
+      "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+      "name": "Namo Cafe Bistro (Beltline)",
+      "cost": 60.0,
+      "lat": 51.0428989,
+      "lon": -114.0710603,
+      "source": "google_places",
+      "why": "Namo Cafe Bistro earns the top spot with the highest rating in the result set (4.8 \u2605 across 1,185 reviews), well above every other returned venue. Its avg_meal_cost of $30 sits comfortably under the $40 per-person budget, and its dietary_flags confirm peanut_risk: false \u2014 making it fully safe for your allergy. Located in downtown Calgary's vibrant Beltline neighbourhood, it offers an eclectic international-leaning caf\u00e9-bistro menu that aligns with the requested cuisine style. Note: source is Google Places and verify_with_restaurant=true, so it is advisable to confirm today's lunch hours directly with the restaurant before visiting."
+    },
+    {
+      "slot": "day1.attraction1",
+      "venue_id": "ChIJJzJsi_1vcVMRgZd7NwckWfE",
+      "name": "Calgary Tower",
+      "cost": 0.0,
+      "lat": 51.04430800000001,
+      "lon": -114.06309139999999,
+      "source": "google_places",
+      "why": "Top verified attraction"
+    },
+    {
+      "slot": "day1.dinner",
+      "venue_id": "ChIJsYwX1AJwcVMRqbb6sDmfHlk",
+      "name": "Ten Foot Henry",
+      "cost": 60.0,
+      "lat": 51.0410718,
+      "lon": -114.0659836,
+      "source": "google_places",
+      "why": "Verified restaurant"
+    },
+    {
+      "slot": "day2.breakfast",
+      "venue_id": "ChIJX-gpm9plcVMRAuKqI9W6G8U",
+      "name": "Komorebi Brunch",
+      "cost": 60.0,
+      "lat": 51.0531618,
+      "lon": -114.04629329999999,
+      "source": "google_places",
+      "why": "Komorebi Brunch earns the top rating (4.8) among all returned results and carries no peanut_risk flag, making it fully safe for your allergy. Its international-leaning brunch menu aligns with the cuisine preference, and its price_level 2 fits within the $20 budget context. Note: verify_with_restaurant=true \u2014 it is advisable to confirm current hours and menu details directly with the restaurant before visiting."
+    },
+    {
+      "slot": "day2.attraction1",
+      "venue_id": "ChIJyaYiQKt6cVMRKqNT7NvmrEY",
+      "name": "The Confluence Historic Site & Parkland",
+      "cost": 0.0,
+      "lat": 51.044624999999996,
+      "lon": -114.04402999999999,
+      "source": "google_places",
+      "why": "Verified replacement attraction"
+    },
+    {
+      "slot": "day2.lunch",
+      "venue_id": "ChIJkfUr1PxvcVMRF_ZsT5eSh7s",
+      "name": "Earls Kitchen + Bar",
+      "cost": 60.0,
+      "lat": 51.0455173,
+      "lon": -114.06929710000001,
+      "source": "google_places",
+      "why": "Earls Kitchen + Bar is the top pick for Day 2 lunch in Calgary. It carries the highest review count (5,714) among all peanut-safe results, shares the top rating of 4.7, and has an avg_meal_cost of $30 \u2014 comfortably under the $40 budget. Its menu spans globally inspired dishes (burgers, bowls, tacos, pasta, sushi-grade tuna) that squarely fit the 'international' cuisine preference. dietary_flags confirm peanut_risk: false, so it is safe for the stated allergy. Note: source is Google Places and verify_with_restaurant is true, so it is advisable to confirm current hours and menu details directly with the restaurant before visiting."
+    },
+    {
+      "slot": "day2.dinner",
+      "venue_id": "ChIJu9AAFddxcVMRvFxH6Gtd6Aw",
+      "name": "Marko's Kitchen",
+      "cost": 60.0,
+      "lat": 51.0039558,
+      "lon": -114.06184390000001,
+      "source": "google_places",
+      "why": "Marko's Kitchen earns the top spot with the highest rating in the result set (4.8 \u2b50 from 1,023 reviews), an avg meal cost of ~$30 \u2014 comfortably under the $65/person budget \u2014 and confirmed peanut_risk: false, making it safe for your allergy. Located in Calgary's vibrant Inglewood neighbourhood, it offers a welcoming international dining experience. Note: this venue carries a verify_with_restaurant advisory from the live Google Places source, so it is worth a quick call ahead to confirm current hours and menu availability for Day 2 dinner."
+    }
+  ],
+  "routes": [
+    {
+      "day": 1,
+      "date": null,
+      "weekday": null,
+      "mode": "WALK",
+      "origin": null,
+      "legs": [
+        {
+          "mode": "walk",
+          "km": 0.98,
+          "minutes": 13.6,
+          "polyline": "gnpvHl_iwTg@ALsMLm@@`@Mq@TuVvADDuDDS\\}`@",
+          "source": "google_routes",
+          "from_slot": "day1.breakfast",
+          "to_slot": "day1.lunch",
+          "from": "Wafflato | Cafe & Lounge",
+          "to": "Namo Cafe Bistro (Beltline)"
+        },
+        {
+          "mode": "walk",
+          "km": 0.73,
+          "minutes": 10.2,
+          "polyline": "gjpvH`ofwTZw]?yAmAI{AI}CMHwNUA",
+          "source": "google_routes",
+          "from_slot": "day1.lunch",
+          "to_slot": "day1.attraction1",
+          "from": "Namo Cafe Bistro (Beltline)",
+          "to": "Calgary Tower"
+        },
+        {
+          "mode": "walk",
+          "km": 0.58,
+          "minutes": 8.2,
+          "polyline": "ispvHn}dwTIfMCj@bFPd@KvLb@",
+          "source": "google_routes",
+          "from_slot": "day1.attraction1",
+          "to_slot": "day1.dinner",
+          "from": "Calgary Tower",
+          "to": "Ten Foot Henry"
+        }
+      ],
+      "totals": {
+        "km": 2.29,
+        "minutes": 31.9
+      },
+      "optimized": true,
+      "stop_order": [
+        "day1.breakfast",
+        "day1.lunch",
+        "day1.attraction1",
+        "day1.dinner"
+      ]
+    },
+    {
+      "day": 2,
+      "date": null,
+      "weekday": null,
+      "mode": "WALK",
+      "origin": null,
+      "legs": [
+        {
+          "mode": "walk",
+          "km": 1.96,
+          "minutes": 26.7,
+          "polyline": "qirvHhtawTAf`@zK?j@AVDdAb@f@ZfCvBn@n@~@oDTiAjBoENIR?z@VR@\\wDZeCHOLEdABDwADIPIdP?NoBHmC@iBiA[EGSiD@i@XkCMSIAGU",
+          "source": "google_routes",
+          "from_slot": "day2.breakfast",
+          "to_slot": "day2.attraction1",
+          "from": "Komorebi Brunch",
+          "to": "The Confluence Historic Site & Parkland"
+        },
+        {
+          "mode": "walk",
+          "km": 1.91,
+          "minutes": 26.9,
+          "polyline": "gspvHnhawTFTH@LR[~C?TRhDDFhAZCbCGrBe@lHGzCArBEdABJIvGBlBDt@EHTBg@r\\Dd@MfNAxEI`GItM_@AWRsCKUrV",
+          "source": "google_routes",
+          "from_slot": "day2.attraction1",
+          "to_slot": "day2.lunch",
+          "from": "The Confluence Historic Site & Parkland",
+          "to": "Earls Kitchen + Bar"
+        },
+        {
+          "mode": "walk",
+          "km": 5.55,
+          "minutes": 77.7,
+          "polyline": "uzpvH~cfwTIhL`PBfA?VCjD@PDlDCjJ@tl@AjPBNBjD?PE|CCf@KxAk@T@hDmAj@k@n@y@\\q@\\kATaB\\eHFe@La@jA{AtCgDXg@Lc@TwBPiC?WPoAbA_EdBgGHOHU\\ZNB`BADGLa@~L`IR_AGEpA}GdATfBPPKrANn@Xz@h@\\`ADeA@oApA^jA\\vGjBrAFxO?rKB@mCrHF?^FPJBdDARFrB??zAdJ?@oA",
+          "source": "google_routes",
+          "from_slot": "day2.lunch",
+          "to_slot": "day2.dinner",
+          "from": "Earls Kitchen + Bar",
+          "to": "Marko's Kitchen"
+        }
+      ],
+      "totals": {
+        "km": 9.41,
+        "minutes": 131.3
+      },
+      "optimized": true,
+      "stop_order": [
+        "day2.breakfast",
+        "day2.attraction1",
+        "day2.lunch",
+        "day2.dinner"
+      ]
+    }
+  ],
+  "budget": {
+    "projected": 360.0,
+    "limit": 500.0,
+    "remaining": 140.0,
+    "status": "ok"
+  },
+  "critic": {
+    "verdict": "revise",
+    "issues": [
+      {
+        "slot": "day2.attraction1",
+        "type": "travel",
+        "detail": "26.7 min exceeds the 25.0 min per-leg limit",
+        "suggestion": "Choose a closer verified venue."
+      },
+      {
+        "slot": "day2.lunch",
+        "type": "travel",
+        "detail": "26.9 min exceeds the 25.0 min per-leg limit",
+        "suggestion": "Choose a closer verified venue."
+      },
+      {
+        "slot": "day2.dinner",
+        "type": "travel",
+        "detail": "77.7 min exceeds the 25.0 min per-leg limit",
+        "suggestion": "Choose a closer verified venue."
+      },
+      {
+        "slot": "day2",
+        "type": "daily_travel",
+        "detail": "131.3 min of travel exceeds the 120.0 min daily limit",
+        "suggestion": "Drop or relocate a stop on this day."
+      }
+    ],
+    "iteration": 2
+  },
+  "candidates": {
+    "day1.breakfast": [
+      {
+        "venue_id": "ChIJ_3eNBfxvcVMRyfDJukTj1pw",
+        "name": "OEB Breakfast Co.",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 3062,
+        "area": "downtown Calgary",
+        "address": "222 5 Ave SW #110, Calgary, AB T2P 0M5, Canada",
+        "lat": 51.048928599999996,
+        "lon": -114.06578449999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJgU0yeMBvcVMR__In07rjQjs",
+        "name": "Wafflato | Cafe & Lounge",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 673,
+        "area": "downtown Calgary",
+        "address": "1002 9 St SW, Calgary, AB T2R 0B5, Canada",
+        "lat": 51.043721,
+        "lon": -114.0836927,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+        "name": "Namo Cafe Bistro (Beltline)",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 1185,
+        "area": "downtown Calgary",
+        "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
+        "lat": 51.0428989,
+        "lon": -114.0710603,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJP9WuX5hxcVMRVRdRQ9VTXkw",
+        "name": "Maven",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 1155,
+        "area": "downtown Calgary",
+        "address": "1006 17 Ave SW, Calgary, AB T2T 0A6, Canada",
+        "lat": 51.0379717,
+        "lon": -114.084665,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJgbf2JFJlcVMR_ifc_6c-Ui8",
+        "name": "Blue Star Diner",
+        "cuisine": "diner",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 2988,
+        "area": "downtown Calgary",
+        "address": "809 1 Ave NE, Calgary, AB T2E 0C2, Canada",
+        "lat": 51.0531722,
+        "lon": -114.0448694,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJWZ0-oktlcVMR3ajdB2SexnU",
+        "name": "Turca Breakfast House",
+        "cuisine": "breakfast restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 1079,
+        "area": "downtown Calgary",
+        "address": "2604 4 St NW, Calgary, AB T2M 3A1, Canada",
+        "lat": 51.0753243,
+        "lon": -114.0712729,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJBeHVLNxvcVMR69KZ450qwso",
+        "name": "Monki Breakfast Club & Bistro Beltline",
+        "cuisine": "breakfast restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 2579,
+        "area": "downtown Calgary",
+        "address": "1301 10 Ave SW, Calgary, AB T3C 0J4, Canada",
+        "lat": 51.0440222,
+        "lon": -114.0914861,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJrQBOsfxvcVMRxqFYqnfUCB0",
+        "name": "The Tastemarket Canadian Kitchen by SAIT",
+        "cuisine": "restaurant",
+        "price_level": 1,
+        "avg_meal_cost": 15.0,
+        "rating": 4.4,
+        "review_count": 439,
+        "area": "downtown Calgary",
+        "address": "444 7 Ave SW #150, Calgary, AB T2P 0X8, Canada",
+        "lat": 51.046983399999995,
+        "lon": -114.07090679999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      }
+    ],
+    "day1.lunch": [
+      {
+        "venue_id": "ChIJS-T6C5FvcVMRm_8ovXMhsno",
+        "name": "Holy Grill",
+        "cuisine": "restaurant",
+        "price_level": 1,
+        "avg_meal_cost": 15.0,
+        "rating": 4.7,
+        "review_count": 26,
+        "area": "downtown Calgary",
+        "address": "Food Court, 325 8 Ave SW 366 3rd Floor, Calgary, AB T2P 4K1, Canada",
+        "lat": 51.045457,
+        "lon": -114.06943009999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJbwdxqFhxcVMRH7InedEg3ig",
+        "name": "First Street Market: Food Hall & Bar",
+        "cuisine": "food court",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 909,
+        "area": "downtown Calgary",
+        "address": "1327 1 St SW #6, Calgary, AB T2R 1C9, Canada",
+        "lat": 51.040073299999996,
+        "lon": -114.0662765,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJJzJsi_1vcVMRMOOmQOsLyEw",
+        "name": "Sky 360",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4,
+        "review_count": 2433,
+        "area": "downtown Calgary",
+        "address": "101 9 Ave SW, Calgary, AB T2P 1J9, Canada",
+        "lat": 51.0444351,
+        "lon": -114.06325659999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJsYwX1AJwcVMRqbb6sDmfHlk",
+        "name": "Ten Foot Henry",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 4068,
+        "area": "downtown Calgary",
+        "address": "1209 1 St SW, Calgary, AB T2R 0V3, Canada",
+        "lat": 51.0410718,
+        "lon": -114.0659836,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJbdE12FpvcVMR3aDH41WxWGw",
+        "name": "Orchard Restaurant",
+        "cuisine": "mediterranean restaurant",
+        "price_level": 3,
+        "avg_meal_cost": 50.0,
+        "rating": 4.4,
+        "review_count": 1422,
+        "area": "downtown Calgary",
+        "address": "620 10 Ave SW #134, Calgary, AB T2R 1C3, Canada",
+        "lat": 51.043861799999995,
+        "lon": -114.0757173,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJw8f6O_pvcVMRxnC5S7NUr3I",
+        "name": "JOEY Eau Claire",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 7590,
+        "area": "downtown Calgary",
+        "address": "208 Barclay Parade SW, Market #200, Calgary, AB T2P 4R5, Canada",
+        "lat": 51.052113,
+        "lon": -114.06928169999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJrQBOsfxvcVMRxqFYqnfUCB0",
+        "name": "The Tastemarket Canadian Kitchen by SAIT",
+        "cuisine": "restaurant",
+        "price_level": 1,
+        "avg_meal_cost": 15.0,
+        "rating": 4.4,
+        "review_count": 439,
+        "area": "downtown Calgary",
+        "address": "444 7 Ave SW #150, Calgary, AB T2P 0X8, Canada",
+        "lat": 51.046983399999995,
+        "lon": -114.07090679999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ9WaiHhxvcVMR4YQwgQIbytI",
+        "name": "Owens Landing",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 1410,
+        "area": "downtown Calgary",
+        "address": "308 4 Ave SW, Calgary, AB T2P 0H7, Canada",
+        "lat": 51.049512199999995,
+        "lon": -114.06843819999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ046b7gRvcVMRJgVhSU7wolM",
+        "name": "Mille Restaurant & Cafe",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 196,
+        "area": "downtown Calgary",
+        "address": "1000 7 Ave SW, Calgary, AB T2P 5L5, Canada",
+        "lat": 51.0472658,
+        "lon": -114.08415679999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.55
+      },
+      {
+        "venue_id": "ChIJx-wfwmNvcVMR7vHheJ6MTkg",
+        "name": "Le Petit Chef - Calgary",
+        "cuisine": "restaurant",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.4,
+        "review_count": 447,
+        "area": "downtown Calgary",
+        "address": "833 4 Ave SW, Calgary, AB T2P 3T5, Canada",
+        "lat": 51.049578,
+        "lon": -114.08033839999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.97
+      },
+      {
+        "venue_id": "ChIJ9WZ7NHZxcVMR9ZwE_f3nw1k",
+        "name": "Porch",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 2289,
+        "area": "downtown Calgary",
+        "address": "730 17 Ave SW, Calgary, AB T2S 0B7, Canada",
+        "lat": 51.038091599999994,
+        "lon": -114.07865149999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.01
+      },
+      {
+        "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+        "name": "Namo Cafe Bistro (Beltline)",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 1185,
+        "area": "downtown Calgary",
+        "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
+        "lat": 51.0428989,
+        "lon": -114.0710603,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.24
+      },
+      {
+        "venue_id": "ChIJaZ5zYKhxcVMRbZ1I6yXufB4",
+        "name": "Lonely Mouth Bar",
+        "cuisine": "japanese restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 921,
+        "area": "downtown Calgary",
+        "address": "528 17 Ave SW, Calgary, AB T2S 0B1, Canada",
+        "lat": 51.038018099999995,
+        "lon": -114.0731076,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": true,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.36
+      }
+    ],
+    "day1.dinner": [
+      {
+        "venue_id": "ChIJJzJsi_1vcVMRMOOmQOsLyEw",
+        "name": "Sky 360",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4,
+        "review_count": 2433,
+        "area": "downtown Calgary",
+        "address": "101 9 Ave SW, Calgary, AB T2P 1J9, Canada",
+        "lat": 51.0444351,
+        "lon": -114.06325659999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJbdE12FpvcVMR3aDH41WxWGw",
+        "name": "Orchard Restaurant",
+        "cuisine": "mediterranean restaurant",
+        "price_level": 3,
+        "avg_meal_cost": 50.0,
+        "rating": 4.4,
+        "review_count": 1422,
+        "area": "downtown Calgary",
+        "address": "620 10 Ave SW #134, Calgary, AB T2R 1C3, Canada",
+        "lat": 51.043861799999995,
+        "lon": -114.0757173,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJsYwX1AJwcVMRqbb6sDmfHlk",
+        "name": "Ten Foot Henry",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 4068,
+        "area": "downtown Calgary",
+        "address": "1209 1 St SW, Calgary, AB T2R 0V3, Canada",
+        "lat": 51.0410718,
+        "lon": -114.0659836,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ046b7gRvcVMRJgVhSU7wolM",
+        "name": "Mille Restaurant & Cafe",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 196,
+        "area": "downtown Calgary",
+        "address": "1000 7 Ave SW, Calgary, AB T2P 5L5, Canada",
+        "lat": 51.0472658,
+        "lon": -114.08415679999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ-3EWPftvcVMRYEELd3shKDA",
+        "name": "Caesar's Steak House & Lounge",
+        "cuisine": "steak house",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.5,
+        "review_count": 2508,
+        "area": "downtown Calgary",
+        "address": "512 4 Ave SW, Calgary, AB T2P 0J7, Canada",
+        "lat": 51.049788899999996,
+        "lon": -114.07237219999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJbxo3i9dvcVMROdTGw4WmDFw",
+        "name": "The Wilde on 27",
+        "cuisine": "restaurant",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4,
+        "review_count": 493,
+        "area": "downtown Calgary",
+        "address": "525 5 Ave SW 27th Floor, Calgary, AB T2P 1P7, Canada",
+        "lat": 51.048559999999995,
+        "lon": -114.07293999999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJw8f6O_pvcVMRxnC5S7NUr3I",
+        "name": "JOEY Eau Claire",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 7590,
+        "area": "downtown Calgary",
+        "address": "208 Barclay Parade SW, Market #200, Calgary, AB T2P 4R5, Canada",
+        "lat": 51.052113,
+        "lon": -114.06928169999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJkfUr1PxvcVMRF_ZsT5eSh7s",
+        "name": "Earls Kitchen + Bar",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 5715,
+        "area": "downtown Calgary",
+        "address": "8 Ave SW #315, Calgary, AB T2P 1C4, Canada",
+        "lat": 51.0455173,
+        "lon": -114.06929710000001,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      }
+    ],
+    "day2.breakfast": [
+      {
+        "venue_id": "ChIJ0eiLxu5vcVMR2Fso7VTZFmQ",
+        "name": "Red's Diner in Kensington",
+        "cuisine": "diner",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 1469,
+        "area": "Kensington, Calgary",
+        "address": "286 10 St NW, Calgary, AB T2N 1V8, Canada",
+        "lat": 51.053883199999994,
+        "lon": -114.0857109,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJgbf2JFJlcVMR_ifc_6c-Ui8",
+        "name": "Blue Star Diner",
+        "cuisine": "diner",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 2988,
+        "area": "Kensington, Calgary",
+        "address": "809 1 Ave NE, Calgary, AB T2E 0C2, Canada",
+        "lat": 51.0531722,
+        "lon": -114.0448694,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJWZ0-oktlcVMR3ajdB2SexnU",
+        "name": "Turca Breakfast House",
+        "cuisine": "breakfast restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 1079,
+        "area": "Kensington, Calgary",
+        "address": "2604 4 St NW, Calgary, AB T2M 3A1, Canada",
+        "lat": 51.0753243,
+        "lon": -114.0712729,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJn75U1P1lcVMRWr7yvXLyEhI",
+        "name": "Chocoberry London (Kensington)",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 399,
+        "area": "Kensington, Calgary",
+        "address": "201 10 St NW, Calgary, AB T2N 1V5, Canada",
+        "lat": 51.0527434,
+        "lon": -114.08639369999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJX-gpm9plcVMRAuKqI9W6G8U",
+        "name": "Komorebi Brunch",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 430,
+        "area": "Kensington, Calgary",
+        "address": "725 1 Ave NE, Calgary, AB T2E 0B7, Canada",
+        "lat": 51.0531618,
+        "lon": -114.04629329999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJLZiuOelvcVMReNCL3msDfRo",
+        "name": "BROUHAHA / Breakfast,Brunch,Lunch",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 933,
+        "area": "Kensington, Calgary",
+        "address": "609 14 St NW, Calgary, AB T2N 2A9, Canada",
+        "lat": 51.0570184,
+        "lon": -114.0950333,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJh8D4xA57cVMRhGyBOSnpgqI",
+        "name": "Rise N' Shine - Forest Lawn",
+        "cuisine": "breakfast restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 761,
+        "area": "Kensington, Calgary",
+        "address": "2014 36 St SE, Calgary, AB T2B 0X8, Canada",
+        "lat": 51.0357711,
+        "lon": -113.9812331,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJBWZDOT1vcVMRXWZkDu4rK6c",
+        "name": "Monki Breakfast Club & Bistro Greenwich",
+        "cuisine": "breakfast restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 1188,
+        "area": "Kensington, Calgary",
+        "address": "50 Greenbriar Dr NW Unit 130, Calgary, AB T3B 6M3, Canada",
+        "lat": 51.0886265,
+        "lon": -114.22104019999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      }
+    ],
+    "day2.lunch": [
+      {
+        "venue_id": "ChIJH4fama5vcVMRpiE52zAfBEU",
+        "name": "The Continental Restaurant",
+        "cuisine": "french restaurant",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.7,
+        "review_count": 267,
+        "area": "Kensington, Calgary",
+        "address": "1131 Kensington Rd NW, Calgary, AB T2N 3P4, Canada",
+        "lat": 51.0524013,
+        "lon": -114.0878077,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJjcrgTRBvcVMRqOYY2iNqtdI",
+        "name": "The Lodge Kitchen & Bar",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.3,
+        "review_count": 312,
+        "area": "Kensington, Calgary",
+        "address": "1918 Kensington Rd NW, Calgary, AB T2N 3R5, Canada",
+        "lat": 51.0527868,
+        "lon": -114.10440179999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ73DMr-lvcVMR0Y4SZr4zFNs",
+        "name": "Niko's Bistro",
+        "cuisine": "italian restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 569,
+        "area": "Kensington, Calgary",
+        "address": "1241 Kensington Rd NW, Calgary, AB T2N 3P8, Canada",
+        "lat": 51.052412600000004,
+        "lon": -114.09128659999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": true
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ1zKI_OhvcVMRMGWCgd4QwGI",
+        "name": "Pulcinella",
+        "cuisine": "pizza restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.3,
+        "review_count": 2120,
+        "area": "Kensington, Calgary",
+        "address": "1147 Kensington Crescent NW, Calgary, AB T2N 1X7, Canada",
+        "lat": 51.0522231,
+        "lon": -114.088827,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": true
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJVY2NHepvcVMR_bS_-AzZPrE",
+        "name": "Globefish Sushi Kensington",
+        "cuisine": "japanese restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.3,
+        "review_count": 928,
+        "area": "Kensington, Calgary",
+        "address": "332 14 St NW, Calgary, AB T2N 1Z7, Canada",
+        "lat": 51.054276,
+        "lon": -114.094307,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": true,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJu9AAFddxcVMRvFxH6Gtd6Aw",
+        "name": "Marko's Kitchen",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 1023,
+        "area": "Kensington, Calgary",
+        "address": "5708 1st St SE #1, Calgary, AB T2H 2W9, Canada",
+        "lat": 51.0039558,
+        "lon": -114.06184390000001,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJM_0b1e5vcVMRSRG6DPY67cM",
+        "name": "Vero Bistro Moderne",
+        "cuisine": "bistro",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.7,
+        "review_count": 906,
+        "area": "Kensington, Calgary",
+        "address": "209 10 St NW, Calgary, AB T2N 1V5, Canada",
+        "lat": 51.053106,
+        "lon": -114.0861085,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJJWgjBOlvcVMRYjS3a8QWQqY",
+        "name": "Original Joe's",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 1450,
+        "area": "Kensington, Calgary",
+        "address": "1220 Kensington Rd NW Unit 100, Calgary, AB T2N 3P5, Canada",
+        "lat": 51.052673,
+        "lon": -114.0898758,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ9WaiHhxvcVMR4YQwgQIbytI",
+        "name": "Owens Landing",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 1410,
+        "area": "Kensington, Calgary",
+        "address": "308 4 Ave SW, Calgary, AB T2P 0H7, Canada",
+        "lat": 51.049512199999995,
+        "lon": -114.06843819999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.96
+      },
+      {
+        "venue_id": "ChIJrQBOsfxvcVMRxqFYqnfUCB0",
+        "name": "The Tastemarket Canadian Kitchen by SAIT",
+        "cuisine": "restaurant",
+        "price_level": 1,
+        "avg_meal_cost": 15.0,
+        "rating": 4.4,
+        "review_count": 439,
+        "area": "Kensington, Calgary",
+        "address": "444 7 Ave SW #150, Calgary, AB T2P 0X8, Canada",
+        "lat": 51.046983399999995,
+        "lon": -114.07090679999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.34
+      },
+      {
+        "venue_id": "ChIJkfUr1PxvcVMRF_ZsT5eSh7s",
+        "name": "Earls Kitchen + Bar",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 5714,
+        "area": "Kensington, Calgary",
+        "address": "8 Ave SW #315, Calgary, AB T2P 1C4, Canada",
+        "lat": 51.0455173,
+        "lon": -114.06929710000001,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.57
+      },
+      {
+        "venue_id": "ChIJo7Pl2OhvcVMR-a8036GrLkE",
+        "name": "Kensington Pub",
+        "cuisine": "pub",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 2005,
+        "area": "Kensington, Calgary",
+        "address": "207 10A St NW, Calgary, AB T2N 1W7, Canada",
+        "lat": 51.0528252,
+        "lon": -114.0875574,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.75
+      },
+      {
+        "venue_id": "ChIJieiEH-lvcVMRCfJeM7UsZNk",
+        "name": "Hayden Block Smoke & Whiskey",
+        "cuisine": "barbecue restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 5176,
+        "area": "Kensington, Calgary",
+        "address": "1136 Kensington Rd NW, Calgary, AB T2N 3P3, Canada",
+        "lat": 51.0527217,
+        "lon": -114.0882254,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.81
+      },
+      {
+        "venue_id": "ChIJJbRA3uhvcVMRxX2w-M2n0k8",
+        "name": "Blanco Cantina",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 1045,
+        "area": "Kensington, Calgary",
+        "address": "1140 Kensington Rd NW, Calgary, AB T2N 3P3, Canada",
+        "lat": 51.0527655,
+        "lon": -114.0884962,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.84
+      }
+    ],
+    "day2.dinner": [
+      {
+        "venue_id": "ChIJhVRp0vN7cVMRvwSfkA2L1LY",
+        "name": "SOT",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 280,
+        "area": "Inglewood, Calgary",
+        "address": "1216 9 Ave SE, Calgary, AB T2G 0T1, Canada",
+        "lat": 51.042002,
+        "lon": -114.03574700000001,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJe-kxqq96cVMROYrOM8LiU6E",
+        "name": "The Eden",
+        "cuisine": "bistro",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 670,
+        "area": "Inglewood, Calgary",
+        "address": "1219 9 Ave SE, Calgary, AB T2G 0S9, Canada",
+        "lat": 51.041610999999996,
+        "lon": -114.035557,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJW_-Y_kB7cVMRNl7r-a6DZ-0",
+        "name": "Mumbai Bites",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 5220,
+        "area": "Inglewood, Calgary",
+        "address": "1214 9 Ave SE, Calgary, AB T2G 0T1, Canada",
+        "lat": 51.0419802,
+        "lon": -114.0359245,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJu5AS_a56cVMRKKt-OFhTSZM",
+        "name": "The Nash Restaurant & Off Cut Bar",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 1694,
+        "area": "Inglewood, Calgary",
+        "address": "925 11 St SE, Calgary, AB T2G 0R4, Canada",
+        "lat": 51.0414374,
+        "lon": -114.03697539999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJsUjswKt6cVMRJCDpcQ0QWAU",
+        "name": "Deane House",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 1080,
+        "area": "Inglewood, Calgary",
+        "address": "806 9 Ave SE, Calgary, AB T2G 5E1, Canada",
+        "lat": 51.043789999999994,
+        "lon": -114.042036,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJlzBpy696cVMRnBT-aB8Kwzw",
+        "name": "Rouge",
+        "cuisine": "restaurant",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.6,
+        "review_count": 771,
+        "area": "Inglewood, Calgary",
+        "address": "1240 8 Ave SE, Calgary, AB T2G 0M7, Canada",
+        "lat": 51.0422794,
+        "lon": -114.03362779999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJUXy4I9d6cVMRwkvMAZMSSiQ",
+        "name": "Safari Grill",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 699,
+        "area": "Inglewood, Calgary",
+        "address": "255 28 St SE #100, Calgary, AB T2A 5K4, Canada",
+        "lat": 51.0499614,
+        "lon": -113.9930064,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJK_q-RZN7cVMRSes9tfZHOWg",
+        "name": "L'Olivo Cicchetti & Lounge",
+        "cuisine": "italian restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 155,
+        "area": "Inglewood, Calgary",
+        "address": "1023 9 Ave SE, Calgary, AB T2G 0S7, Canada",
+        "lat": 51.042273400000006,
+        "lon": -114.0382757,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": true
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJu9AAFddxcVMRvFxH6Gtd6Aw",
+        "name": "Marko's Kitchen",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 1023,
+        "area": "Inglewood, Calgary",
+        "address": "5708 1st St SE #1, Calgary, AB T2H 2W9, Canada",
+        "lat": 51.0039558,
+        "lon": -114.06184390000001,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.0
+      },
+      {
+        "venue_id": "ChIJmyopa1hwcVMRGM7hPwIc854",
+        "name": "Prairie Dog Brewing",
+        "cuisine": "barbecue restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.3,
+        "review_count": 3005,
+        "area": "Inglewood, Calgary",
+        "address": "105D 58 Ave SE, Calgary, AB T2H 0N8, Canada",
+        "lat": 51.0009777,
+        "lon": -114.06338079999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.49
+      },
+      {
+        "venue_id": "ChIJI5QiZEVwcVMRgjcdwtPuhPo",
+        "name": "Subway",
+        "cuisine": "sandwich shop",
+        "price_level": 1,
+        "avg_meal_cost": 15.0,
+        "rating": 4.4,
+        "review_count": 341,
+        "area": "Inglewood, Calgary",
+        "address": "429 58 Ave SE, Calgary, AB T2H 0P5, Canada",
+        "lat": 51.0010991,
+        "lon": -114.0548604,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.82
+      },
+      {
+        "venue_id": "ChIJxQS2v4t6cVMRWRfILl8UYyU",
+        "name": "Jane Bond BBQ",
+        "cuisine": "barbecue restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 3005,
+        "area": "Inglewood, Calgary",
+        "address": "723 46 Ave SE #321, Calgary, AB T2G 2A4, Canada",
+        "lat": 51.0105996,
+        "lon": -114.0465711,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.82
+      }
+    ],
+    "day1.attraction1": [
+      {
+        "venue_id": "ChIJJzJsi_1vcVMRgZd7NwckWfE",
+        "name": "Calgary Tower",
+        "category": "tourist attraction",
+        "cost": 0.0,
+        "rating": 4.5,
+        "visit_duration_min": 60,
+        "lat": 51.04430800000001,
+        "lon": -114.06309139999999,
+        "kid_friendly": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJpS1pyfBvcVMRR_gMg_K0K0Y",
+        "name": "Prince's Island Park",
+        "category": "city park",
+        "cost": 0.0,
+        "rating": 4.7,
+        "visit_duration_min": 60,
+        "lat": 51.0556,
+        "lon": -114.07025329999999,
+        "kid_friendly": true,
+        "source": "google_places"
+      }
+    ],
+    "day2.attraction1": [
+      {
+        "venue_id": "ChIJJzJsi_1vcVMRgZd7NwckWfE",
+        "name": "Calgary Tower",
+        "category": "tourist attraction",
+        "cost": 0.0,
+        "rating": 4.5,
+        "visit_duration_min": 60,
+        "lat": 51.04430800000001,
+        "lon": -114.06309139999999,
+        "kid_friendly": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJpS1pyfBvcVMRR_gMg_K0K0Y",
+        "name": "Prince's Island Park",
+        "category": "city park",
+        "cost": 0.0,
+        "rating": 4.7,
+        "visit_duration_min": 60,
+        "lat": 51.0556,
+        "lon": -114.07025329999999,
+        "kid_friendly": true,
+        "source": "google_places"
+      }
+    ]
+  },
+  "trace": [
+    {
+      "agent": "restaurant",
+      "message": "day1.breakfast: chose Wafflato | Cafe & Lounge via google_places"
+    },
+    {
+      "agent": "restaurant",
+      "message": "day1.lunch: chose JOEY Eau Claire via google_places"
+    },
+    {
+      "agent": "restaurant",
+      "message": "day1.dinner: chose Ten Foot Henry via google_places"
+    },
+    {
+      "agent": "restaurant",
+      "message": "day2.breakfast: chose Komorebi Brunch via google_places"
+    },
+    {
+      "agent": "restaurant",
+      "message": "day2.lunch: chose Marko's Kitchen via google_places"
+    },
+    {
+      "agent": "restaurant",
+      "message": "day2.dinner: chose Mumbai Bites via google_places"
+    },
+    {
+      "agent": "attraction",
+      "message": "day1.attraction1: Calgary Tower"
+    },
+    {
+      "agent": "attraction",
+      "message": "day2.attraction1: Prince's Island Park"
+    },
+    {
+      "agent": "route",
+      "message": "6 travel legs computed"
+    },
+    {
+      "agent": "critic",
+      "message": "verdict=revise issues=7"
+    },
+    {
+      "agent": "revise",
+      "message": "reselected slots: ['day1.breakfast', 'day1.lunch', 'day2', 'day2.attraction1', 'day2.breakfast', 'day2.dinner', 'day2.lunch']"
+    },
+    {
+      "agent": "critic",
+      "message": "verdict=revise issues=4"
+    },
+    {
+      "agent": "ship",
+      "message": "SHIPPED WITH 4 UNRESOLVED ISSUES after 2 iterations"
+    }
+  ],
+  "meta": {
+    "tier": 2,
+    "elapsed_s": 48.23,
+    "mock_llm": false,
+    "data_backend": "live",
+    "tool_backends": {
+      "restaurants": "google_places",
+      "attractions": "google_places",
+      "travel": "google_routes",
+      "live_decision": "forced_live",
+      "fallback_events": 0
+    },
+    "latency_budget_s": 60,
+    "unresolved_issues": [
+      {
+        "slot": "day2.attraction1",
+        "type": "travel",
+        "detail": "26.7 min exceeds the 25.0 min per-leg limit",
+        "suggestion": "Choose a closer verified venue."
+      },
+      {
+        "slot": "day2.lunch",
+        "type": "travel",
+        "detail": "26.9 min exceeds the 25.0 min per-leg limit",
+        "suggestion": "Choose a closer verified venue."
+      },
+      {
+        "slot": "day2.dinner",
+        "type": "travel",
+        "detail": "77.7 min exceeds the 25.0 min per-leg limit",
+        "suggestion": "Choose a closer verified venue."
+      },
+      {
+        "slot": "day2",
+        "type": "daily_travel",
+        "detail": "131.3 min of travel exceeds the 120.0 min daily limit",
+        "suggestion": "Drop or relocate a stop on this day."
+      }
+    ],
+    "llm_calls": 25,
+    "tokens": {
+      "llm_calls": 25,
+      "input_tokens": 63762,
+      "output_tokens": 6076
+    }
+  }
+}

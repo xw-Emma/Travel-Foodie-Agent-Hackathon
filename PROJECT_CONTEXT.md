@@ -154,10 +154,18 @@ Sequential executors \= Tier 1\. `asyncio.gather` \= Tier 2\.
 ### Validated so far (Teresa, 25 Aug)
 
 - ✅ Places API (New) working locally on VPN — real Calgary and Toronto restaurants returned, cuisine filter (Thai) works, results confirmed **not** from the local CSVs.  
-- ⏳ Routes API enabled on all projects but **not yet tested**.  
-- ⏳ Tier 2 not yet built.  
-- ⏳ Chat-window UI not yet added (Gerardo will expect one).  
+- ✅ Routes API tested and in use — `computeRoutes` with per-leg geometry and `optimizeWaypointOrder`, verified live and offline.  
+- ✅ Tier 2 built: parallel executors, Attraction + Route agents, and a Critic loop that converges (distance-aware revision).  
+- ✅ Structured web UI built — `st.form`, day tabs with travel times and `source` badges, a pydeck map with one route line per day, an agent trace, and a diagnostics panel. The chat box was replaced by the form: it cannot express dates, origin, radius, or attraction type, and every widget nudge fired a fresh round of billed API calls.  
 - Only change needed to make it work: **proxy setup**. Kit is otherwise sufficient.
+
+> **Reference-implementation status (27 Aug):** Phases 0–5 of
+> `TIER2_TO_MAP_UI_IMPLEMENTATION_PLAN.md` are complete. Live and offline
+> acceptance both pass all three graded scenarios. Two corrections worth
+> carrying into the kit: Places Text Search rejects a `circle` in
+> `locationRestriction` (rectangle only), and the response cache covers Google
+> but **not** Fuel iX, so `auto` falls back to the deterministic planner rather
+> than relying on a warm cache for the LLM.
 
 ---
 
