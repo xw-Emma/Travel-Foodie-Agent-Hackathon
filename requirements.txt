@@ -1,5 +1,8 @@
-# Core kit runs on the Python standard library alone.
-# Verify optional packages on a TELUS laptop during M0.
+# Core orchestration runs on the Python standard library alone.
+# API and UI dependencies are required by the corresponding entrypoints.
+
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
 
 streamlit>=1.36,<2.0     # optional Tier 2 UI (CLI is the safe fallback)
 pandas>=2.0,<3.0         # optional data staging / EDA

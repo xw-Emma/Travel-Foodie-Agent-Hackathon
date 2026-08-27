@@ -91,9 +91,10 @@ if prompt:
             try:
                 result = call_plan(prefs)
                 lines = ["**Itinerary**"]
-                for slot, item in (result.get("itinerary") or {}).items():
+                for item in (result.get("itinerary") or []):
+                    slot = item.get("slot", "") if isinstance(item, dict) else ""
                     name = item.get("name") if isinstance(item, dict) else item
-                    cost = item.get("avg_meal_cost") if isinstance(item, dict) else ""
+                    cost = item.get("cost", "") if isinstance(item, dict) else ""
                     lines.append(f"- `{slot}`: {name}  ${cost}")
                 lines.append(f"\n**Budget:** `{result.get('budget')}`")
                 lines.append(f"\n**Backends:** `{result.get('tool_backends')}`")

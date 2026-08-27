@@ -272,7 +272,7 @@ def run_tier1(request: dict) -> TripState:
     days = int(request.get("days", 2))
     party_size = max(1, int(request.get("party_size", 1)))
 
-    if config.MOCK_MODE:
+    if config.MOCK_MODE or config.DATA_BACKEND == "local":
         per_day = float(request["budget_total"]) / days
         st.plan = {
             "days": days,
@@ -341,7 +341,7 @@ def run_tier1(request: dict) -> TripState:
     st.itinerary = chosen
     formatted = ""
     telemetry = {"llm_calls": 0, "input_tokens": 0, "output_tokens": 0}
-    if not config.MOCK_MODE:
+    if not config.MOCK_MODE and config.DATA_BACKEND != "local":
         formatted = _format_with_llm(client, st)
         telemetry = dict(client.telemetry)
         st.log("formatter", "Formatted the verified itinerary with Fuel iX")
