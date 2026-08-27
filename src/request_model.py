@@ -65,8 +65,14 @@ class TripRequest(BaseModel):
                 for index, day in enumerate(self.dates)]
 
     def to_request_dict(self) -> dict:
-        """Return a JSON-compatible dict for the existing orchestrator API."""
-        data = self.model_dump(exclude={"tier", "data_backend"})
+        """Return a JSON-compatible dict for the existing orchestrator API.
+
+        mode="json" matters: the request is embedded verbatim into the Planner
+        and Critic prompts with json.dumps, and a bare date object raises
+        TypeError there. Converting at this boundary keeps start_date a plain
+        ISO string, which _day_label already accepts.
+        """
+        data = self.model_dump(mode="json", exclude={"tier", "data_backend"})
         data.pop("dates", None)
         data.pop("weekdays", None)
         data.pop("day_labels", None)

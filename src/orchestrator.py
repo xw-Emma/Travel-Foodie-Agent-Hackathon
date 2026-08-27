@@ -12,12 +12,15 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+import urllib.error
 from datetime import date
 
 from . import config, demo_mode
-from .fuelix_client import FuelixClient, parse_json_reply, run_tool_loop
+from .fuelix_client import (FuelixClient, FuelixError, parse_json_reply,
+                            run_tool_loop)
 from .state import TripState, MEALS, TOOL_SCHEMAS, is_valid_slot, slot_ids
-from .tools import (TOOL_IMPLS, MODE_SPEED_KMH, compute_day_route, haversine_km,
+from .tools import (CITY_CENTRES, TOOL_IMPLS, MODE_SPEED_KMH, compute_day_route,
+                    haversine_km,
                     reset_backend_report, search_restaurants, get_venue_details,
                     search_attractions, check_budget, last_backend_report)
 from .tools.local_catalog import is_open_at
@@ -29,6 +32,49 @@ def validate_critic_output(critic_json: dict, days: int = 2) -> tuple[bool, list
     bad = [iss.get("slot") for iss in critic_json.get("issues", [])
            if not is_valid_slot(str(iss.get("slot", "")), days=days)]
     return (len(bad) == 0, bad)
+
+
+def _describe_llm_failure(error: Exception) -> tuple[str, str]:
+    """Return (short reason, human sentence) for a failed LLM planning step.
+
+    Worth the care: a blanket "Fuel iX was unreachable" once hid a TypeError in
+    our own prompt serialisation, and sent someone looking for a network fault
+    that did not exist. Only say unreachable when it actually was.
+    """
+    detail = f"{type(error).__name__}: {str(error)[:160]}"
+    if isinstance(error, (FuelixError, urllib.error.URLError, TimeoutError, OSError)):
+        return detail, ("Fuel iX was unreachable, so this plan was built "
+                        "without the LLM.")
+    if isinstance(error, (ValueError, KeyError)):
+        return detail, ("Fuel iX answered but the response could not be used, "
+                        "so this plan was built without the LLM.")
+    return detail, ("The LLM planning step hit an internal error, so this plan "
+                    "was built without it. This is a bug in the agent, not an "
+                    "outage — please report it.")
+
+
+def _trip_anchor(request: dict) -> tuple[float, float] | None:
+    """Where the trip is centred: the resolved origin, else the city centre."""
+    origin = request.get("origin") or {}
+    if origin.get("lat") is not None and origin.get("lon") is not None:
+        return (origin["lat"], origin["lon"])
+    return CITY_CENTRES.get(str(request.get("city", "")).strip().lower())
+
+
+def _search_area(request: dict) -> tuple[tuple[float, float] | None, float | None]:
+    """(anchor, radius_km) for a first-pass search.
+
+    Only applied when the caller actually supplied search_radius_km. Live text
+    search otherwise returns venues spread across the whole metro - which is
+    what produced 300-minute walking legs the critic then could not fix - but
+    silently imposing a default radius would change the graded scenarios, which
+    never set one.
+    """
+    radius = request.get("search_radius_km")
+    if radius is None:
+        return None, None
+    anchor = _trip_anchor(request)
+    return (anchor, float(radius)) if anchor else (None, None)
 
 
 def _budget_per_person(request: dict, days: int) -> float:
@@ -44,7 +90,7 @@ def _plan_with_llm(client: FuelixClient, request: dict) -> dict:
         "Split this request into exactly one restaurant task for every valid slot. "
         "Return STRICT JSON only. Do not select or name any venue.\n"
         f"Valid slot IDs (use these EXACTLY): {valid_slots}\n"
-        f"Request: {json.dumps(request, sort_keys=True)}\n"
+        f"Request: {json.dumps(request, sort_keys=True, default=str)}\n"
         "Each task must contain: agent='restaurant', slot, meal, area_hint, "
         "budget_per_person, and constraints with allergies and cuisines. "
         "Schema: {\"days\": int, \"meals_per_day\": 3, "
@@ -185,6 +231,7 @@ def _pick_restaurant_with_tool_loop(
 
     leg_minutes, _, _ = _travel_limits(request)
     mode = str(request.get("transport_mode", "WALK")).lower()
+    trip_anchor, trip_radius = _search_area(request)
 
     def search_for_task(**kwargs):
         kwargs.update({
@@ -197,8 +244,8 @@ def _pick_restaurant_with_tool_loop(
             "limit": max(int(kwargs.get("limit") or 0), 8),
             # On a revision this restricts the Places search to a circle around
             # the previous stop, so the live path converges like the local one.
-            "near": anchor,
-            "within_km": _within_km(leg_minutes, mode) if anchor else None,
+            "near": anchor or trip_anchor,
+            "within_km": (_within_km(leg_minutes, mode) if anchor else trip_radius),
         })
         rows = search_restaurants(**kwargs)
         observed_candidates.extend(rows)
@@ -376,18 +423,24 @@ def _pick_local_task(task: dict, request: dict, used: set[str],
     mode = str(request.get("transport_mode", "WALK")).lower()
     price_ceiling = _max_price_level(task["budget_per_person"])
 
+    # A revision anchor (the previous stop) wins over the trip anchor, and only
+    # the revision anchor feeds the distance PENALTY in score_candidate - being
+    # far from the city centre is not itself a defect.
+    trip_anchor, trip_radius = _search_area(request)
+    search_anchor = anchor or trip_anchor
+
     def search(cuisine, within_km):
         return search_restaurants(
             city=request["city"], meal=task["meal"], cuisine=cuisine,
             price_level_max=price_ceiling, exclude_flags=exclude, limit=20,
-            near=anchor, within_km=within_km)
+            near=search_anchor, within_km=within_km)
 
     cuisine = cuisines[0] if cuisines else None
-    radius = _within_km(max_leg_minutes, mode) if anchor else None
+    radius = _within_km(max_leg_minutes, mode) if anchor else trip_radius
     opening = _slot_opening(request, task["slot"])
     rows = _drop_closed(search(cuisine, radius), opening)
     # Widen only as far as needed: drop the radius first, the cuisine last.
-    if anchor and not [row for row in rows if row["venue_id"] not in used]:
+    if search_anchor and not [row for row in rows if row["venue_id"] not in used]:
         rows = _drop_closed(search(cuisine, None), opening)
     if cuisines and not [row for row in rows if row["venue_id"] not in used]:
         rows = _drop_closed(search(None, None), opening)
@@ -501,8 +554,10 @@ async def _execute_attractions_tier2(
     attractions_per_day: int = 1,
 ) -> tuple[dict[str, dict], list[tuple[str, Exception]]]:
     limit = _attraction_limit(days, attractions_per_day)
+    trip_anchor, trip_radius = _search_area(request)
     results = await asyncio.gather(
-        *(asyncio.to_thread(search_attractions, request["city"], category, limit)
+        *(asyncio.to_thread(search_attractions, request["city"], category, limit,
+                            trip_anchor, trip_radius)
           for _ in range(days)),
         return_exceptions=True,
     )
@@ -937,7 +992,7 @@ def _drop_invalid_slots(critic: dict, days: int) -> tuple[dict, list[str]]:
 def _critic_with_llm(client: FuelixClient, st: TripState, request: dict) -> dict:
     system = (config.PROMPTS_DIR / "critic.md").read_text(encoding="utf-8")
     user = ("Review this verified itinerary and return STRICT JSON only. "
-            f"Original request: {json.dumps(request, sort_keys=True)}\n"
+            f"Original request: {json.dumps(request, sort_keys=True, default=str)}\n"
             f"Itinerary: {json.dumps(st.itinerary, default=str)}\n"
             f"Routes: {json.dumps(st.routes, default=str)}\n"
             f"Budget: {json.dumps(st.budget, default=str)}")
@@ -955,7 +1010,7 @@ async def _run_tier2_async(request: dict) -> TripState:
     party_size = max(1, int(request.get("party_size", 1)))
     st = TripState(request=request)
     client = None if config.MOCK_MODE or config.current_backend() == "local" else FuelixClient(timeout=30, max_retries=1)
-    llm_fallback = None
+    llm_fallback = llm_fallback_message = None
     if client is None:
         tasks = _local_restaurant_tasks(request)
     else:
@@ -966,9 +1021,8 @@ async def _run_tier2_async(request: dict) -> TripState:
             # axis with no cache behind it, so an unreachable Fuel iX used to take
             # the whole run down even though every tool still worked. Drop to the
             # deterministic pipeline instead of returning nothing.
-            llm_fallback = f"{type(error).__name__}: {str(error)[:120]}"
-            st.log("planner", f"Fuel iX unavailable ({type(error).__name__}); "
-                              "planned deterministically without the LLM")
+            llm_fallback, llm_fallback_message = _describe_llm_failure(error)
+            st.log("planner", f"{llm_fallback_message} ({llm_fallback})")
             client = None
             tasks = _local_restaurant_tasks(request)
     selected, observed, failures = await _execute_restaurants_tier2(tasks, request, client)
@@ -1104,6 +1158,8 @@ async def _run_tier2_async(request: dict) -> TripState:
                "latency_budget_s": config.LATENCY_BUDGET_S,
                "unresolved_issues": unresolved,
                "llm_fallback": llm_fallback,
+        "llm_fallback_message": llm_fallback_message,
+               "llm_fallback_message": llm_fallback_message,
                "llm_calls": client.telemetry["llm_calls"] if client else 0,
                "tokens": dict(client.telemetry) if client else {
                    "llm_calls": 0, "input_tokens": 0, "output_tokens": 0,
@@ -1129,7 +1185,7 @@ def run_tier1(request: dict) -> TripState:
 
     client = None
     chosen = None
-    llm_fallback = None
+    llm_fallback = llm_fallback_message = None
     if not (config.MOCK_MODE or config.current_backend() == "local"):
         try:
             client = FuelixClient(timeout=30, max_retries=1)
@@ -1153,9 +1209,8 @@ def run_tier1(request: dict) -> TripState:
                 })
                 st.log("restaurant", f"{task['slot']}: chose {pick['name']} via {pick.get('source')}")
         except Exception as error:  # noqa: BLE001 - see the Tier 2 note above
-            llm_fallback = f"{type(error).__name__}: {str(error)[:120]}"
-            st.log("planner", f"Fuel iX unavailable ({type(error).__name__}); "
-                              "planned deterministically without the LLM")
+            llm_fallback, llm_fallback_message = _describe_llm_failure(error)
+            st.log("planner", f"{llm_fallback_message} ({llm_fallback})")
             client = None
             chosen = None
 

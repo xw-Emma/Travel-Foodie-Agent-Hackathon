@@ -69,8 +69,9 @@ st.set_page_config(page_title="Travel Foodie Agent",
 
 
 @st.cache_data(show_spinner=False, ttl=60)
-def _diagnostics() -> dict:
-    return _get("/diagnostics")
+def _diagnostics(backend: str) -> dict:
+    """Ask the backend what IT would do with the backend this UI will send."""
+    return _get(f"/diagnostics?backend={backend}")
 
 
 with st.sidebar:
@@ -81,7 +82,7 @@ with st.sidebar:
     st.divider()
     st.subheader("Diagnostics")
     try:
-        ui.render_diagnostics(_diagnostics())
+        ui.render_diagnostics(_diagnostics(backend))
     except Exception as exc:  # noqa: BLE001
         st.error(f"Cannot reach the backend: `{exc}`")
     if st.button("Refresh diagnostics", width="stretch"):

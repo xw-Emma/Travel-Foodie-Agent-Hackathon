@@ -64,11 +64,12 @@ def render_banners(meta: dict, request: dict, budget: dict) -> None:
             icon=":material/videocam:")
 
     if meta.get("llm_fallback"):
+        headline = meta.get("llm_fallback_message") or (
+            "The LLM step failed, so this plan was built without it.")
         st.warning(
-            "**Fuel iX was unreachable, so this plan was built without the LLM.** "
-            "The tools, constraints and budget all still ran; the planner and "
-            f"critic used their deterministic rules instead. ({meta['llm_fallback']})",
-            icon=":material/cloud_off:")
+            f"**{headline}** The tools, constraints and budget all still ran; "
+            "the planner and critic used their deterministic rules instead. "
+            f"({meta['llm_fallback']})", icon=":material/cloud_off:")
 
     unresolved = meta.get("unresolved_issues") or []
     if unresolved:

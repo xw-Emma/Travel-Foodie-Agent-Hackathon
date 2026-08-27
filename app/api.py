@@ -26,12 +26,19 @@ def health() -> dict[str, Any]:
 
 
 @app.get("/diagnostics")
-def diagnose(probe: bool = False) -> dict[str, Any]:
+def diagnose(probe: bool = False, backend: str | None = None) -> dict[str, Any]:
     """Which backend will run, and whether the Google APIs actually answer.
 
-    `probe=true` makes two real (billed) calls, so it is opt-in.
+    `probe=true` makes two real (billed) calls, so it is opt-in. `backend` asks
+    what a run WOULD do with that setting, so a UI can report the backend its
+    own selector will send rather than the server's default.
     """
-    return diagnostics.snapshot(probe_apis=probe)
+    token = config.set_backend_override(backend) if backend else None
+    try:
+        return diagnostics.snapshot(probe_apis=probe)
+    finally:
+        if token is not None:
+            config._backend_override.reset(token)
 
 
 @app.post("/plan")

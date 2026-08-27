@@ -29,8 +29,15 @@ CITY_SUGGESTIONS = ["Calgary", "Vancouver", "Montreal"]
 
 
 @st.cache_data(show_spinner=False, ttl=60)
-def _diagnostics(probe: bool) -> dict:
-    return diagnostics.snapshot(probe_apis=probe)
+def _diagnostics(probe: bool, backend: str) -> dict:
+    # Report what the NEXT run will do, not the process default. Without the
+    # override the panel read "forced_local" from .env while the selector said
+    # "auto" and the run went live - the one thing this panel exists to prevent.
+    token = config.set_backend_override(backend)
+    try:
+        return diagnostics.snapshot(probe_apis=probe)
+    finally:
+        config._backend_override.reset(token)
 
 
 def render_result(state: dict) -> None:
@@ -83,7 +90,7 @@ with st.sidebar:
     st.subheader("Diagnostics")
     probe = st.checkbox("Probe the Google APIs", value=False,
                         help="Makes two real calls. Leave off to avoid billing.")
-    ui.render_diagnostics(_diagnostics(probe))
+    ui.render_diagnostics(_diagnostics(probe, backend))
     if st.button("Refresh diagnostics", width="stretch"):
         _diagnostics.clear()
         st.rerun()
