@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
 
 from src.orchestrator import run_tier2  # noqa: E402
 from src import config  # noqa: E402
-from src.state import slot_ids  # noqa: E402
+from src.state import is_valid_slot, slot_ids  # noqa: E402
 from src.tools import get_venue_details  # noqa: E402
 
 SCENARIOS = Path(__file__).with_name("scenarios.json")
@@ -101,27 +101,51 @@ def check_attraction_trap(st, request) -> list[str]:
 
 
 def check_routes(st, request) -> list[str]:
+    """Every leg that breaches a travel limit must carry a matching Critic issue.
+
+    Both limits are asserted: max_leg_minutes (mode-independent, the Phase 1
+    constraint) and max_walk_km (still honoured when a caller supplies it).
+    """
     fails = []
-    max_walk = float(request.get("max_walk_km", 2.0))
+    max_leg_minutes = float(request.get("max_leg_minutes") or 25.0)
+    raw_km = request.get("max_walk_km")
+    max_walk_km = float(raw_km) if raw_km is not None else None
+    max_daily_minutes = float(request.get("max_daily_travel_minutes") or 120.0)
     travel_issues = {issue.get("slot") for issue in st.critic.get("issues", [])
                      if issue.get("type") == "travel"}
+    daily_issues = {issue.get("slot") for issue in st.critic.get("issues", [])
+                    if issue.get("type") == "daily_travel"}
     for day_route in st.routes:
         for route in day_route.get("legs", []):
             if "km" not in route or "minutes" not in route:
                 fails.append(f"invalid route result: {route}")
-            if route.get("km", 0) > max_walk:
+            over = float(route.get("minutes") or 0) > max_leg_minutes or (
+                max_walk_km is not None and float(route.get("km") or 0) > max_walk_km)
+            if over:
                 target = route.get("to_slot")
                 if target not in travel_issues:
                     fails.append(f"missing travel Critic issue for {target}: {route}")
+        day_minutes = float((day_route.get("totals") or {}).get("minutes") or 0)
+        if day_minutes > max_daily_minutes:
+            scope = f"day{day_route.get('day')}"
+            if scope not in daily_issues:
+                fails.append(f"missing daily_travel Critic issue for {scope}: "
+                             f"{day_minutes} min")
     return fails
 
 
 def check_valid_slots(st, request) -> list[str]:
     days = int(request.get("days", 2))
-    valid = set(slot_ids(days, attractions_per_day=1))
-    actual = {item.get("slot") for item in st.itinerary}
-    actual.update(issue.get("slot") for issue in st.critic.get("issues", []))
-    return [f"invalid slot: {slot}" for slot in sorted(actual - valid) if slot]
+    # An itinerary entry must be a fillable slot — never a day scope or origin.
+    fillable = set(slot_ids(days, attractions_per_day=1))
+    fails = [f"invalid itinerary slot: {slot}" for slot
+             in sorted({item.get("slot") for item in st.itinerary} - fillable) if slot]
+    # A Critic issue may additionally name a day-level scope.
+    fails += [f"invalid critic slot: {slot}" for slot
+              in sorted({issue.get("slot") for issue in st.critic.get("issues", [])}
+                        - fillable)
+              if slot and not is_valid_slot(str(slot), days=days)]
+    return fails
 
 
 def check_critic_bound(st, request) -> list[str]:

@@ -29,8 +29,25 @@ def slot_ids(days: int = 2, meals=MEALS, attractions_per_day: int = 1) -> list[s
 SLOT_IDS = slot_ids()  # default 2-day vocabulary; regenerate for other trips
 
 
+def day_scopes(days: int = 2) -> list[str]:
+    """Non-revisable scopes the Critic may legitimately name.
+
+    "day2" carries an issue that belongs to a whole day rather than one stop —
+    a daily travel-time or budget total. "day2.origin" is where the day starts;
+    route legs reference it, but no agent can re-plan it.
+    """
+    scopes: list[str] = []
+    for d in range(1, days + 1):
+        scopes.append(f"day{d}")
+        scopes.append(f"day{d}.origin")
+    return scopes
+
+
 def is_valid_slot(slot: str, days: int = 2) -> bool:
-    return slot in slot_ids(days)
+    """Accept a revisable slot OR a day-level scope. Still a closed vocabulary —
+    slot_ids() alone stays the set the Planner may fill and the Critic may ask
+    to redo."""
+    return slot in slot_ids(days) or slot in day_scopes(days)
 
 
 @dataclass

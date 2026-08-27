@@ -441,17 +441,56 @@ async def _compute_routes_async(items: list[dict], request: dict) -> list[dict]:
     return routes
 
 
+def _travel_limits(request: dict) -> tuple[float, float | None, float]:
+    """Return (max_leg_minutes, max_walk_km or None, max_daily_travel_minutes).
+
+    Minutes are the primary constraint because they are mode-independent: 3 km
+    is a 40-minute walk but an 8-minute drive, so a distance limit means
+    something different for every transport_mode.
+
+    max_walk_km is the pre-Phase-1 constraint. It is still enforced whenever a
+    caller supplies it — eval/scenarios.json and the sidebar both still do —
+    because silently dropping it would relax a constraint those callers rely on.
+    It is NOT a unit conversion of max_leg_minutes; both are checked, and either
+    can raise an issue.
+    """
+    max_leg_minutes = float(request.get("max_leg_minutes") or 25.0)
+    raw_km = request.get("max_walk_km")
+    max_walk_km = float(raw_km) if raw_km is not None else None
+    max_daily_minutes = float(request.get("max_daily_travel_minutes") or 120.0)
+    return max_leg_minutes, max_walk_km, max_daily_minutes
+
+
 def _deterministic_critic(st: TripState, request: dict, days: int) -> dict:
+    max_leg_minutes, max_walk_km, max_daily_minutes = _travel_limits(request)
     issues = []
-    max_walk = float(request.get("max_walk_km", 2.0))
+    flagged: set[str] = set()
     for day_route in st.routes:
-        for route in day_route.get("legs", []):
-            if route.get("km", 0) > max_walk:
-                target = route.get("to_slot", "")
-                if target:
-                    issues.append({"slot": target, "type": "travel",
-                                   "detail": f"{route['km']} km exceeds {max_walk} km walking limit",
-                                   "suggestion": "Choose a closer verified venue."})
+        for leg in day_route.get("legs", []):
+            target = leg.get("to_slot", "")
+            if not target or target in flagged:
+                continue
+            minutes = float(leg.get("minutes") or 0)
+            km = float(leg.get("km") or 0)
+            if minutes > max_leg_minutes:
+                detail = f"{minutes} min exceeds the {max_leg_minutes} min per-leg limit"
+            elif max_walk_km is not None and km > max_walk_km:
+                detail = f"{km} km exceeds the {max_walk_km} km distance limit"
+            else:
+                continue
+            flagged.add(target)
+            issues.append({"slot": target, "type": "travel", "detail": detail,
+                           "suggestion": "Choose a closer verified venue."})
+        # A day can stay inside the per-leg limit on every hop and still add up
+        # to an exhausting day, so the total is checked separately and the issue
+        # belongs to the day rather than to any one stop.
+        day_minutes = float((day_route.get("totals") or {}).get("minutes") or 0)
+        if day_minutes > max_daily_minutes:
+            issues.append({
+                "slot": f"day{day_route.get('day')}", "type": "daily_travel",
+                "detail": (f"{day_minutes} min of travel exceeds the "
+                           f"{max_daily_minutes} min daily limit"),
+                "suggestion": "Drop or relocate a stop on this day."})
     return {"verdict": "revise" if issues else "approved", "issues": issues}
 
 
