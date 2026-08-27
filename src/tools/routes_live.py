@@ -32,7 +32,7 @@ def estimate_travel(from_lat: float, from_lon: float,
         "languageCode": "en-US",
         "units": "METRIC",
     }
-    key = cache.make_key("routes", payload)
+    key = cache.make_key("routes_v2_polyline", payload)
     hit = cache.get(key)
     if hit is not None:
         hit["_cache_hit"] = True
@@ -41,7 +41,7 @@ def estimate_travel(from_lat: float, from_lon: float,
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": config.GOOGLE_MAPS_API_KEY,
-        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters",
+        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
     }
     req = urllib.request.Request(
         config.ROUTES_BASE_URL, data=json.dumps(payload).encode("utf-8"),
@@ -65,6 +65,7 @@ def estimate_travel(from_lat: float, from_lon: float,
         "mode": mode,
         "km": round(meters / 1000.0, 2),
         "minutes": round(seconds / 60.0, 1),
+        "polyline": (r0.get("polyline") or {}).get("encodedPolyline"),
         "source": "google_routes",
     }
     cache.put(key, result)

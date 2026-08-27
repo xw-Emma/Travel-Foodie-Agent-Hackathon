@@ -15,6 +15,7 @@ import math
 import sqlite3
 
 from .. import config
+from ..polyline import encode_polyline
 
 
 def _conn() -> sqlite3.Connection:
@@ -155,6 +156,7 @@ def estimate_travel(from_lat: float, from_lon: float,
     speed_kmh = {"walk": 4.5, "drive": 25.0}.get(mode, 4.5)
     return {"mode": mode, "km": round(route_km, 2),
             "minutes": round(route_km / speed_kmh * 60, 1),
+            "polyline": encode_polyline([(from_lat, from_lon), (to_lat, to_lon)]),
             "source": "haversine_fallback"}
 
 

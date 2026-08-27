@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pydeck as pdk
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,7 @@ if str(ROOT) not in sys.path:
 from src import config  # noqa: E402
 from src.orchestrator import run_tier1, run_tier2  # noqa: E402
 from src.request_model import TripRequest  # noqa: E402
+from src.polyline import decode_polyline  # noqa: E402
 
 
 st.set_page_config(page_title="Travel Foodie Agent", page_icon=":material/restaurant:", layout="wide")
@@ -66,13 +68,43 @@ def render_itinerary(itinerary: list[dict]) -> None:
         st.dataframe(pd.DataFrame(attraction_rows), width="stretch", hide_index=True)
 
 
-def render_map(itinerary: list[dict]) -> None:
-    points = [{"lat": item["lat"], "lon": item["lon"], "name": item["name"]}
+def render_map(itinerary: list[dict], routes: list[dict]) -> None:
+    points = [{"lat": item["lat"], "lon": item["lon"], "name": item["name"],
+         "kind": "attraction" if ".attraction" in item.get("slot", "") else "meal",
+         "color": [221, 110, 36] if ".attraction" in item.get("slot", "") else [38, 112, 201]}
               for item in itinerary if item.get("lat") is not None and item.get("lon") is not None]
     st.subheader("Map")
     if points:
-        st.map(pd.DataFrame(points), latitude="lat", longitude="lon", size=90, zoom=12)
-        st.caption(f"{len(points)} verified stops plotted")
+        path_rows = []
+        colors = [[38, 112, 201], [221, 110, 36], [44, 145, 96], [141, 91, 170]]
+        for index, day_route in enumerate(routes):
+            path = []
+            for leg in day_route.get("legs", []):
+                encoded = leg.get("polyline")
+                if encoded:
+                    decoded = decode_polyline(encoded)
+                    path.extend(decoded if not path else decoded[1:])
+            if path:
+                path_rows.append({"day": day_route.get("day"), "path": path,
+                                  "color": colors[index % len(colors)]})
+        point_layer = pdk.Layer(
+            "ScatterplotLayer", data=points, get_position="[lon, lat]",
+            get_radius=90, get_fill_color="color",
+            pickable=True,
+        )
+        layers = [point_layer]
+        if path_rows:
+            layers.insert(0, pdk.Layer(
+                "PathLayer", data=path_rows, get_path="path", get_color="color",
+                width_min_pixels=3, pickable=True,
+            ))
+        frame = pd.DataFrame(points)
+        view = pdk.ViewState(
+            latitude=float(frame["lat"].mean()), longitude=float(frame["lon"].mean()), zoom=12)
+        deck = pdk.Deck(layers=layers, initial_view_state=view,
+                        tooltip={"text": "{name}\n{kind}"})
+        st.pydeck_chart(deck, width="stretch")
+        st.caption(f"{len(points)} verified stops plotted; {len(path_rows)} day routes")
     else:
         st.info("No geocoded stops are available for this plan.")
 
@@ -88,7 +120,7 @@ def render_result(state) -> None:
     budget_columns[3].metric("Status", str(budget.get("status", "unknown")).title())
 
     render_itinerary(state.itinerary)
-    render_map(state.itinerary)
+    render_map(state.itinerary, state.routes)
 
     with st.expander("Agent trace", expanded=True):
         for entry in state.trace:
