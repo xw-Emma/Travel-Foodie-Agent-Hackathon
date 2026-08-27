@@ -79,13 +79,24 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                        cuisine: str | None = None,
                        price_level_max: int | None = None,
                        exclude_flags: list[str] | None = None,
-                       limit: int = 5) -> list[dict]:
+                       limit: int = 5,
+                       near: tuple[float, float] | None = None,
+                       within_km: float | None = None) -> list[dict]:
     if _want_live():
         try:
             rows = _places.search_restaurants(
                 city, meal, area=area, cuisine=cuisine,
                 price_level_max=price_level_max,
-                exclude_flags=exclude_flags, limit=limit)
+                exclude_flags=exclude_flags, limit=limit,
+                near=near, within_km=within_km)
+            if not rows and near is not None:
+                # The radius is a preference, not a hard constraint. Dropping to
+                # a different BACKEND because a circle was drawn too tight would
+                # swap live data for offline data over a soft filter.
+                rows = _places.search_restaurants(
+                    city, meal, area=area, cuisine=cuisine,
+                    price_level_max=price_level_max,
+                    exclude_flags=exclude_flags, limit=limit)
             if rows:
                 _record("restaurants", "google_places")
                 return rows
@@ -100,7 +111,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
     rows = _local.search_restaurants(
         city, meal, area=area, cuisine=cuisine,
         price_level_max=price_level_max,
-        exclude_flags=exclude_flags, limit=limit)
+        exclude_flags=exclude_flags, limit=limit,
+        near=near, within_km=within_km)
     _record("restaurants", "local_dataset", fell_back=_want_live())
     return rows
 
@@ -124,10 +136,16 @@ def get_venue_details(venue_id: str) -> dict:
 
 # ---------------------------------------------------------------- attractions
 def search_attractions(city: str, category: str | None = None,
-                       limit: int = 5) -> list[dict]:
+                       limit: int = 5,
+                       near: tuple[float, float] | None = None,
+                       within_km: float | None = None) -> list[dict]:
     if _want_live():
         try:
-            rows = _places.search_attractions(city, category=category, limit=limit)
+            rows = _places.search_attractions(city, category=category, limit=limit,
+                                              near=near, within_km=within_km)
+            if not rows and near is not None:
+                # Same reasoning as search_restaurants: widen before falling back.
+                rows = _places.search_attractions(city, category=category, limit=limit)
             if rows:
                 _record("attractions", "google_places")
                 return rows
@@ -138,7 +156,8 @@ def search_attractions(city: str, category: str | None = None,
             if config.current_backend() == "live":
                 raise
             _record("attractions", f"fallback_after_error:{type(exc).__name__}", True)
-    rows = _local.search_attractions(city, category=category, limit=limit)
+    rows = _local.search_attractions(city, category=category, limit=limit,
+                                     near=near, within_km=within_km)
     _record("attractions", "local_dataset", fell_back=_want_live())
     return rows
 
@@ -160,9 +179,32 @@ def estimate_travel(from_lat: float, from_lon: float,
     return r
 
 
+def compute_day_route(origin: dict | None, stops: list[dict], mode: str = "WALK",
+                      optimize: bool = True) -> dict:
+    """One whole-day route: ordered stops, per-leg geometry, day totals."""
+    if _want_live():
+        try:
+            r = _routes.compute_day_route(origin, stops, mode=mode, optimize=optimize)
+            _record("travel", "google_routes")
+            return r
+        except Exception as exc:  # noqa: BLE001
+            if config.current_backend() == "live":
+                raise
+            _record("travel", f"fallback_after_error:{type(exc).__name__}", True)
+    r = _local.compute_day_route(origin, stops, mode=mode, optimize=optimize)
+    _record("travel", "haversine_fallback", fell_back=_want_live())
+    return r
+
+
 # -------------------------------------------------------------------- budget
 def check_budget(items: list[dict], limit: float) -> dict:
     return _budget.check_budget(items, limit)
+
+
+# Pure geometry, identical whichever backend is live. Re-exported so agents can
+# score candidates by distance without importing a backend module directly.
+haversine_km = _local.haversine_km
+MODE_SPEED_KMH = _local.MODE_SPEED_KMH
 
 
 # Convenience map for the Fuel iX tool loop
@@ -171,5 +213,6 @@ TOOL_IMPLS = {
     "get_venue_details": get_venue_details,
     "search_attractions": search_attractions,
     "estimate_travel": estimate_travel,
+    "compute_day_route": compute_day_route,
     "check_budget": check_budget,
 }

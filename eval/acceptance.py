@@ -18,6 +18,7 @@ from src.orchestrator import run_tier2  # noqa: E402
 from src import config  # noqa: E402
 from src.state import is_valid_slot, slot_ids  # noqa: E402
 from src.tools import get_venue_details  # noqa: E402
+from src.polyline import decode_polyline  # noqa: E402
 
 SCENARIOS = Path(__file__).with_name("scenarios.json")
 
@@ -134,6 +135,46 @@ def check_routes(st, request) -> list[str]:
     return fails
 
 
+def check_route_geometry(st, request) -> list[str]:
+    """Every leg must be drawable, in both backends. Without geometry there is
+    no map, and the local fallback is only insurance if it renders too."""
+    fails = []
+    for day_route in st.routes:
+        for leg in day_route.get("legs", []):
+            if not leg.get("polyline"):
+                fails.append(f"leg without geometry: {leg.get('from_slot')} -> "
+                             f"{leg.get('to_slot')}")
+            elif not decode_polyline(leg["polyline"]):
+                fails.append(f"undecodable polyline on {leg.get('to_slot')}")
+        order = day_route.get("stop_order") or []
+        if len(order) != len(set(order)):
+            fails.append(f"day{day_route.get('day')} visits a stop twice: {order}")
+    return fails
+
+
+def check_unresolved_reported(st, request) -> list[str]:
+    """A shipped constraint violation must be recorded, never silent."""
+    unresolved = st.meta.get("unresolved_issues")
+    if unresolved is None:
+        return ["meta.unresolved_issues missing"]
+    shipped_with_issues = st.critic.get("verdict") == "revise" and st.critic.get("issues")
+    if shipped_with_issues and not unresolved:
+        return [f"shipped {len(st.critic['issues'])} issues without recording them"]
+    if unresolved and not any(entry.get("agent") == "ship" for entry in st.trace):
+        return ["unresolved issues were not announced in the trace"]
+    return []
+
+
+def check_budget_utilisation(st, request) -> list[str]:
+    """Guards B7. The plan used to land near a third of the budget, which reads
+    as a broken budget rather than a frugal one."""
+    limit = float(st.budget.get("limit") or 0)
+    if not limit:
+        return ["no budget limit"]
+    used = float(st.budget.get("projected") or 0) / limit
+    return [] if used > 0.60 else [f"underspending: {used:.0%} of budget used"]
+
+
 def check_valid_slots(st, request) -> list[str]:
     days = int(request.get("days", 2))
     # An itinerary entry must be a fillable slot — never a day scope or origin.
@@ -191,6 +232,9 @@ CHECKS = {
     "opening_hours": check_opening_hours,
     "attraction_trap": check_attraction_trap,
     "route_distance": check_routes,
+    "route_geometry": check_route_geometry,
+    "unresolved_reported": check_unresolved_reported,
+    "budget_utilisation": check_budget_utilisation,
     "critic_revision_bound": check_critic_bound,
     "valid_slot_ids": check_valid_slots,
     "real_backend": check_real_backend,
@@ -199,7 +243,8 @@ CHECKS = {
 }
 
 LIVE_ONLY_CHECKS = {"no_allergen_leaks", "has_meals", "no_duplicate_venues",
-                    "route_distance", "critic_revision_bound", "valid_slot_ids",
+                    "route_distance", "route_geometry", "unresolved_reported",
+                    "critic_revision_bound", "valid_slot_ids",
                     "real_backend", "llm_call_count", "elapsed_under_60"}
 
 
@@ -224,7 +269,9 @@ def main() -> None:
                 all_ok = False
             print(f"  {status} {name} {fails or ''}")
         follow_up_checks = ("party_size", "no_duplicate_venues", "opening_hours",
-                     "attraction_trap", "route_distance", "critic_revision_bound",
+                     "attraction_trap", "route_distance", "route_geometry",
+                     "unresolved_reported", "budget_utilisation",
+                     "critic_revision_bound",
                      "valid_slot_ids", "real_backend", "llm_call_count",
                      "elapsed_under_60")
         if args.live:

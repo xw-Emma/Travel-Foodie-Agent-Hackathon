@@ -17,9 +17,10 @@ from datetime import date
 from . import config
 from .fuelix_client import FuelixClient, parse_json_reply, run_tool_loop
 from .state import TripState, MEALS, TOOL_SCHEMAS, is_valid_slot, slot_ids
-from .tools import (TOOL_IMPLS, reset_backend_report, search_restaurants, get_venue_details,
-                    search_attractions, estimate_travel, check_budget,
-                    last_backend_report)
+from .tools import (TOOL_IMPLS, MODE_SPEED_KMH, compute_day_route, haversine_km,
+                    reset_backend_report, search_restaurants, get_venue_details,
+                    search_attractions, check_budget, last_backend_report)
+from .tools.local_catalog import is_open_at
 
 
 # ------------------------------------------------------- Critic slot guard
@@ -85,16 +86,95 @@ def _plan_with_llm(client: FuelixClient, request: dict) -> dict:
     return plan
 
 
+# A single meal may cost more than an equal share of the budget, because the
+# budget is one shared pool: a cheap breakfast pays for a better dinner.
+SLOT_BUDGET_HEADROOM = 2.0
+# data/seed.py stores price_level as len(band) and does NOT cap it, so $$$$$ is
+# level 5. config.PRICE_LEVEL_MEAL_COST stops at 4, so extend it here.
+TYPICAL_MEAL_COST = {**config.PRICE_LEVEL_MEAL_COST, 5: 120.0}
+
+
 def _max_price_level(budget_per_person: float) -> int:
-    if budget_per_person < 45:
-        return 2
-    if budget_per_person < 70:
-        return 3
-    return 4
+    """Highest price band worth fetching for one meal.
+
+    A coarse pre-filter, not the affordability decision - score_candidate gates
+    on the real price. Setting the ceiling at the equal per-meal share left the
+    pool with nothing better to move to, which is the other half of B7: the
+    chronic underspend survived even after the hardcoded cap was removed.
+    """
+    ceiling = float(budget_per_person) * SLOT_BUDGET_HEADROOM
+    affordable = [level for level, typical in TYPICAL_MEAL_COST.items()
+                  if typical <= ceiling]
+    # Never below 2. On a tight budget the bands are a poor guide (Places
+    # reports a band, not a price) and a ceiling of 1 returns almost nothing
+    # live, which silently drops the whole search to the offline dataset.
+    return max(2, max(affordable)) if affordable else 2
+
+
+def candidate_cost(candidate: dict, party_size: int) -> float:
+    """Party cost of one stop. Restaurants carry avg_meal_cost, attractions cost."""
+    per_person = candidate.get("avg_meal_cost")
+    if per_person is None:
+        per_person = candidate.get("cost")
+    return round(float(per_person or 0) * max(1, int(party_size)), 2)
+
+
+def score_candidate(candidate: dict, *, budget_remaining: float, party_size: int,
+                    anchor: tuple[float, float] | None = None,
+                    max_leg_minutes: float = 25.0, mode: str = "walk") -> float:
+    """Higher is better. -inf means it does not fit the remaining budget.
+
+    Replaces three inconsistent selection rules that produced different plans
+    for the same request:
+      - run_tier1 local branch: first by rating DESC, capped at price_level 2
+      - _pick_local_task:       min(avg_meal_cost)  (cheapest wins -> underspend)
+      - revision fallback:      first unused        (distance-blind -> B2)
+
+    Rating dominates, affordability is a hard gate rather than a price-band
+    guess, and distance is a penalty that only bites once a leg passes the
+    limit. Fully deterministic: no randomness, so scripts/tier_diff.py stays a
+    meaningful A/B.
+    """
+    if candidate_cost(candidate, party_size) > budget_remaining:
+        return float("-inf")
+    score = float(candidate.get("rating") or 0) * 10.0
+    if anchor is not None and candidate.get("lat") is not None:
+        km = haversine_km(anchor[0], anchor[1],
+                          candidate["lat"], candidate["lon"])
+        speed = MODE_SPEED_KMH.get((mode or "walk").lower(), MODE_SPEED_KMH["walk"])
+        minutes = km / speed * 60.0
+        # Inside the limit costs nothing; beyond it each minute is worth more
+        # than a 0.05 rating star, so a closer good venue beats a distant great
+        # one without a cheap venue ever winning on price alone.
+        score -= max(0.0, minutes - max_leg_minutes) * 0.5
+    return score
+
+
+def best_candidate(candidates: list[dict], *, used: set[str],
+                   budget_remaining: float, party_size: int,
+                   anchor: tuple[float, float] | None = None,
+                   max_leg_minutes: float = 25.0,
+                   mode: str = "walk") -> dict | None:
+    """Highest-scoring unused candidate, ties broken by venue_id for stability."""
+    pool = [c for c in candidates if c.get("venue_id") not in used]
+    if not pool:
+        return None
+    scored = [(score_candidate(c, budget_remaining=budget_remaining,
+                               party_size=party_size, anchor=anchor,
+                               max_leg_minutes=max_leg_minutes, mode=mode), c)
+              for c in pool]
+    affordable = [(s, c) for s, c in scored if s != float("-inf")]
+    if not affordable:
+        # Nothing fits. Take the cheapest so the slot is still filled and the
+        # budget check reports the overage, rather than dropping the meal.
+        return min(pool, key=lambda c: (candidate_cost(c, party_size),
+                                        str(c.get("venue_id"))))
+    return max(affordable, key=lambda pair: (pair[0], str(pair[1].get("venue_id"))))[1]
 
 
 def _pick_restaurant_with_tool_loop(
-    client: FuelixClient, task: dict, request: dict, used_venue_ids: set[str]
+    client: FuelixClient, task: dict, request: dict, used_venue_ids: set[str],
+    anchor: tuple[float, float] | None = None,
 ) -> tuple[dict, list[dict]]:
     allergies = task["constraints"].get("allergies", [])
     exclude = [f"{allergy}_risk" for allergy in allergies]
@@ -102,6 +182,9 @@ def _pick_restaurant_with_tool_loop(
     cuisine = cuisines[0] if cuisines else None
     observed_candidates: list[dict] = []
     tool_impls = dict(TOOL_IMPLS)
+
+    leg_minutes, _, _ = _travel_limits(request)
+    mode = str(request.get("transport_mode", "WALK")).lower()
 
     def search_for_task(**kwargs):
         kwargs.update({
@@ -112,6 +195,10 @@ def _pick_restaurant_with_tool_loop(
             "price_level_max": _max_price_level(task["budget_per_person"]),
             "exclude_flags": exclude,
             "limit": max(int(kwargs.get("limit") or 0), 8),
+            # On a revision this restricts the Places search to a circle around
+            # the previous stop, so the live path converges like the local one.
+            "near": anchor,
+            "within_km": _within_km(leg_minutes, mode) if anchor else None,
         })
         rows = search_restaurants(**kwargs)
         observed_candidates.extend(rows)
@@ -277,26 +364,49 @@ def _local_restaurant_tasks(request: dict) -> list[dict]:
     } for day in range(1, days + 1) for meal in MEALS]
 
 
-def _pick_local_task(task: dict, request: dict, used: set[str]) -> tuple[dict | None, list[dict]]:
+def _pick_local_task(task: dict, request: dict, used: set[str],
+                     anchor: tuple[float, float] | None = None,
+                     budget_per_slot: float | None = None,
+                     ) -> tuple[dict | None, list[dict]]:
     allergies = task["constraints"].get("allergies", [])
     cuisines = task["constraints"].get("cuisines") or []
-    rows = search_restaurants(
-        city=request["city"], meal=task["meal"], cuisine=cuisines[0] if cuisines else None,
-        price_level_max=_max_price_level(task["budget_per_person"]),
-        exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
-    if len([row for row in rows if row["venue_id"] not in used]) == 0 and cuisines:
-        rows = search_restaurants(
-            city=request["city"], meal=task["meal"], cuisine=None,
-            price_level_max=_max_price_level(task["budget_per_person"]),
-            exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
-    available = [row for row in rows if row["venue_id"] not in used]
-    pick = min(available, key=lambda row: float(row.get("avg_meal_cost", 0)), default=None)
-    return (dict(pick, why="Selected from verified local dataset.") if pick else None, rows)
+    exclude = [f"{allergy}_risk" for allergy in allergies]
+    party_size = max(1, int(request.get("party_size", 1)))
+    max_leg_minutes, _, _ = _travel_limits(request)
+    mode = str(request.get("transport_mode", "WALK")).lower()
+    price_ceiling = _max_price_level(task["budget_per_person"])
+
+    def search(cuisine, within_km):
+        return search_restaurants(
+            city=request["city"], meal=task["meal"], cuisine=cuisine,
+            price_level_max=price_ceiling, exclude_flags=exclude, limit=20,
+            near=anchor, within_km=within_km)
+
+    cuisine = cuisines[0] if cuisines else None
+    radius = _within_km(max_leg_minutes, mode) if anchor else None
+    rows = search(cuisine, radius)
+    # Widen only as far as needed: drop the radius first, the cuisine last.
+    if anchor and not [row for row in rows if row["venue_id"] not in used]:
+        rows = search(cuisine, None)
+    if cuisines and not [row for row in rows if row["venue_id"] not in used]:
+        rows = search(None, None)
+
+    pick = best_candidate(
+        rows, used=used,
+        budget_remaining=(budget_per_slot if budget_per_slot is not None
+                          else task["budget_per_person"] * party_size),
+        party_size=party_size, anchor=anchor,
+        max_leg_minutes=max_leg_minutes, mode=mode)
+    why = ("Closest verified match to the previous stop." if anchor
+           else "Best-rated verified local match inside the budget.")
+    return (dict(pick, why=why) if pick else None, rows)
 
 
-def _pick_live_task(client: FuelixClient, task: dict, request: dict) -> tuple[dict | None, list[dict]]:
+def _pick_live_task(client: FuelixClient, task: dict, request: dict,
+                    anchor: tuple[float, float] | None = None
+                    ) -> tuple[dict | None, list[dict]]:
     try:
-        pick, rows = _pick_restaurant_with_tool_loop(client, task, request, set())
+        pick, rows = _pick_restaurant_with_tool_loop(client, task, request, set(), anchor)
         return pick, rows
     except Exception:
         return None, []
@@ -305,13 +415,24 @@ def _pick_live_task(client: FuelixClient, task: dict, request: dict) -> tuple[di
 async def _execute_restaurants_tier2(
     tasks: list[dict], request: dict, client: FuelixClient | None,
     reserved: set[str] | None = None,
+    anchors: dict[str, tuple[float, float]] | None = None,
+    budget_per_slot: float | None = None,
 ) -> tuple[dict[str, dict], dict[str, list[dict]], list[tuple[str, Exception]]]:
-    """Run independent restaurant searches concurrently without fail-fast gather."""
+    """Run independent restaurant searches concurrently without fail-fast gather.
+
+    `budget_per_slot` overrides the planned per-meal allowance. A revision needs
+    it: pulling a stop closer must not quietly spend the budget the surviving
+    stops already committed.
+    """
     reserved = set(reserved or set())
+    anchors = anchors or {}
     if client is None:
-        worker = lambda task: _pick_local_task(task, request, reserved)
+        worker = lambda task: _pick_local_task(
+            task, request, reserved, anchors.get(task["slot"]),
+            budget_per_slot)
     else:
-        worker = lambda task: _pick_live_task(client, task, request)
+        worker = lambda task: _pick_live_task(
+            client, task, request, anchors.get(task["slot"]))
     results = await asyncio.gather(
         *(asyncio.to_thread(worker, task) for task in tasks),
         return_exceptions=True,
@@ -320,6 +441,21 @@ async def _execute_restaurants_tier2(
     observed: dict[str, list[dict]] = {}
     failures: list[tuple[str, Exception]] = []
     used: set[str] = set(reserved)
+    party_size = max(1, int(request.get("party_size", 1)))
+    max_leg_minutes, _, _ = _travel_limits(request)
+    mode = str(request.get("transport_mode", "WALK")).lower()
+
+    def allowance(task: dict) -> float:
+        if budget_per_slot is not None:
+            return budget_per_slot
+        return task["budget_per_person"] * party_size
+
+    def choose(rows: list[dict], task: dict) -> dict | None:
+        return best_candidate(
+            rows, used=used, budget_remaining=allowance(task),
+            party_size=party_size, anchor=anchors.get(task["slot"]),
+            max_leg_minutes=max_leg_minutes, mode=mode)
+
     for task, result in zip(tasks, results):
         slot = task["slot"]
         if isinstance(result, Exception):
@@ -327,8 +463,8 @@ async def _execute_restaurants_tier2(
             continue
         pick, rows = result
         observed[slot] = rows
-        replacement = pick if pick and pick["venue_id"] not in used else next(
-            (row for row in rows if row["venue_id"] not in used), None)
+        replacement = (pick if pick and pick["venue_id"] not in used
+                       else choose(rows, task))
         if replacement:
             selected[slot] = replacement
             used.add(replacement["venue_id"])
@@ -342,16 +478,30 @@ async def _execute_restaurants_tier2(
             price_level_max=_max_price_level(task["budget_per_person"]),
             exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20)
         observed[slot] = rows
-        replacement = next((row for row in rows if row["venue_id"] not in used), None)
+        replacement = choose(rows, task)
         if replacement:
             selected[slot] = dict(replacement, why="Selected from verified fallback candidates.")
             used.add(replacement["venue_id"])
     return selected, observed, failures
 
 
-async def _execute_attractions_tier2(city: str, days: int) -> tuple[dict[str, dict], list[tuple[str, Exception]]]:
+def _attraction_limit(days: int, attractions_per_day: int = 1) -> int:
+    """Enough distinct attractions for every day, plus slack for dedup.
+
+    The old hardcoded limit=2 meant a 3-day trip ran out: both results were
+    consumed by days 1 and 2 and day 3 got nothing (B8).
+    """
+    return max(2, days * max(1, attractions_per_day) + 2)
+
+
+async def _execute_attractions_tier2(
+    city: str, days: int, category: str | None = None,
+    attractions_per_day: int = 1,
+) -> tuple[dict[str, dict], list[tuple[str, Exception]]]:
+    limit = _attraction_limit(days, attractions_per_day)
     results = await asyncio.gather(
-        *(asyncio.to_thread(search_attractions, city, None, 2) for _ in range(days)),
+        *(asyncio.to_thread(search_attractions, city, category, limit)
+          for _ in range(days)),
         return_exceptions=True,
     )
     selected: dict[str, dict] = {}
@@ -396,49 +546,85 @@ def _day_label(request: dict, day: int) -> tuple[str | None, str | None]:
     return current.isoformat(), current.strftime("%a").lower()
 
 
+def _meals_stay_in_order(order: list[int], stops: list[dict]) -> bool:
+    """True when a proposed visiting order still serves the meals in time order."""
+    rank = {meal: index for index, meal in enumerate(MEALS)}
+    seen = []
+    for position in order:
+        suffix = stops[position]["slot"].split(".", 1)[-1]
+        if suffix in rank:
+            seen.append(rank[suffix])
+    return seen == sorted(seen)
+
+
+def _route_one_day(origin: dict | None, stops: list[dict], mode: str,
+                   optimize: bool) -> dict:
+    """Route one day, refusing an optimization that reshuffles the meals.
+
+    The router minimises travel and has no idea that breakfast cannot follow
+    dinner. Attractions are free to move between meals, which is where the real
+    saving is; the meal sequence is fixed by the clock.
+    """
+    result = compute_day_route(origin, stops, mode=mode, optimize=optimize)
+    if result.get("optimized") and not _meals_stay_in_order(result.get("order", []), stops):
+        result = compute_day_route(origin, stops, mode=mode, optimize=False)
+        result["optimize_rejected"] = "would have reordered the meals"
+    return result
+
+
 async def _compute_routes_async(items: list[dict], request: dict) -> list[dict]:
     days = int(request.get("days", 2))
     mode = str(request.get("transport_mode", "WALK")).lower()
-    grouped = {day: _sort_day_stops([item for item in items
-                                     if item.get("slot", "").startswith(f"day{day}.")])
-               for day in range(1, days + 1)}
+    optimize = bool(request.get("optimize_route", True))
     day_stops = []
     for day in range(1, days + 1):
-        stops = grouped[day]
-        origin = _resolved_origin(request, day)
-        if origin:
-            stops = [origin, *stops]
-        day_stops.append((day, stops))
+        stops = _sort_day_stops([item for item in items
+                                 if item.get("slot", "").startswith(f"day{day}.")])
+        day_stops.append((day, _resolved_origin(request, day), stops))
 
-    calls = []
-    call_pairs = []
-    for day, stops in day_stops:
-        for source, target in zip(stops, stops[1:]):
-            call_pairs.append((day, source, target))
-            calls.append(asyncio.to_thread(
-                estimate_travel, source["lat"], source["lon"],
-                target["lat"], target["lon"], mode))
-    results = await asyncio.gather(*calls, return_exceptions=True)
-    routes_by_day = {day: [] for day in range(1, days + 1)}
-    for (day, source, target), result in zip(call_pairs, results):
-        if isinstance(result, Exception):
-            leg = {"from_slot": source["slot"], "to_slot": target["slot"],
-                   "from": source["name"], "to": target["name"], "error": str(result)}
-        else:
-            leg = {**result, "from_slot": source["slot"], "to_slot": target["slot"],
-                   "from": source["name"], "to": target["name"]}
-        routes_by_day[day].append(leg)
+    results = await asyncio.gather(
+        *(asyncio.to_thread(_route_one_day, origin, stops, mode, optimize)
+          for _, origin, stops in day_stops),
+        return_exceptions=True,
+    )
 
     routes = []
-    for day, stops in day_stops:
-        legs = routes_by_day[day]
-        totals = {"km": round(sum(float(leg.get("km", 0)) for leg in legs), 2),
-                  "minutes": round(sum(float(leg.get("minutes", 0)) for leg in legs), 1)}
+    for (day, origin, stops), result in zip(day_stops, results):
         trip_date, weekday = _day_label(request, day)
-        routes.append({"day": day, "date": trip_date, "weekday": weekday,
-                       "mode": mode.upper(), "legs": legs, "totals": totals,
-                       "optimized": False})
+        entry = {"day": day, "date": trip_date, "weekday": weekday,
+                 "mode": mode.upper(), "origin": origin}
+        if isinstance(result, Exception):
+            entry.update({"legs": [], "totals": {"km": 0.0, "minutes": 0.0},
+                          "optimized": False, "error": str(result),
+                          "stop_order": [stop["slot"] for stop in stops]})
+            routes.append(entry)
+            continue
+        order = result.get("order") or list(range(len(stops)))
+        entry.update({
+            "legs": result.get("legs", []),
+            "totals": result.get("totals", {"km": 0.0, "minutes": 0.0}),
+            "optimized": bool(result.get("optimized")),
+            "stop_order": [stops[position]["slot"] for position in order],
+        })
+        if result.get("optimize_rejected"):
+            entry["optimize_rejected"] = result["optimize_rejected"]
+        routes.append(entry)
     return routes
+
+
+def _apply_visiting_order(items: list[dict], routes: list[dict]) -> list[dict]:
+    """Reorder the itinerary so it reads in the order the day is actually walked.
+
+    Only attractions can have moved (_route_one_day rejects anything that
+    reshuffles meals), so this changes where an attraction sits between meals,
+    never what a slot means.
+    """
+    position = {}
+    for route in routes:
+        for index, slot in enumerate(route.get("stop_order") or []):
+            position[slot] = (route["day"], index)
+    return sorted(items, key=lambda item: position.get(
+        item.get("slot"), (99, 99)))
 
 
 def _travel_limits(request: dict) -> tuple[float, float | None, float]:
@@ -459,6 +645,53 @@ def _travel_limits(request: dict) -> tuple[float, float | None, float]:
     max_walk_km = float(raw_km) if raw_km is not None else None
     max_daily_minutes = float(request.get("max_daily_travel_minutes") or 120.0)
     return max_leg_minutes, max_walk_km, max_daily_minutes
+
+
+def _within_km(max_leg_minutes: float, mode: str) -> float:
+    """How far the traveller gets inside the per-leg time limit, for this mode."""
+    speed = MODE_SPEED_KMH.get((mode or "walk").lower(), MODE_SPEED_KMH["walk"])
+    return round(max_leg_minutes / 60.0 * speed, 2)
+
+
+# Nominal times a slot is visited, for the opening-hours check.
+MEAL_TIMES = {"breakfast": "08:00", "lunch": "12:30", "dinner": "19:00"}
+ATTRACTION_TIME = "14:00"
+
+
+def _day_number(slot: str) -> int | None:
+    head = str(slot).split(".", 1)[0]
+    return int(head[3:]) if head.startswith("day") and head[3:].isdigit() else None
+
+
+def _hours_issues(st: TripState, request: dict) -> list[dict]:
+    """Flag a stop scheduled on a day it is closed.
+
+    Needs start_date: without a real date there is no weekday to check against.
+    Only local-dataset stops are checked, because is_open_at() reads the seeded
+    {'mon': {'open','close'}} shape; Google returns regularOpeningHours in a
+    different structure, where it answers None and unknown is treated as a pass.
+    """
+    weekdays = {}
+    for day in range(1, int(request.get("days", 2)) + 1):
+        _, weekday = _day_label(request, day)
+        if weekday:
+            weekdays[day] = weekday
+    if not weekdays:
+        return []
+    issues = []
+    for item in st.itinerary:
+        slot = str(item.get("slot", ""))
+        weekday = weekdays.get(_day_number(slot))
+        if not weekday or item.get("source") != "local_dataset":
+            continue
+        suffix = slot.split(".", 1)[-1]
+        hhmm = MEAL_TIMES.get(suffix, ATTRACTION_TIME)
+        if is_open_at(get_venue_details(item["venue_id"]), weekday, hhmm) is False:
+            issues.append({
+                "slot": slot, "type": "hours",
+                "detail": f"{item.get('name')} is closed {weekday} at {hhmm}",
+                "suggestion": "Choose a venue open on that day."})
+    return issues
 
 
 def _deterministic_critic(st: TripState, request: dict, days: int) -> dict:
@@ -491,7 +724,182 @@ def _deterministic_critic(st: TripState, request: dict, days: int) -> dict:
                 "detail": (f"{day_minutes} min of travel exceeds the "
                            f"{max_daily_minutes} min daily limit"),
                 "suggestion": "Drop or relocate a stop on this day."})
+    issues.extend(_hours_issues(st, request))
     return {"verdict": "revise" if issues else "approved", "issues": issues}
+
+
+def _merge_candidates(existing: list[dict], new: list[dict]) -> list[dict]:
+    """Union of everything ever seen for a slot, first occurrence wins.
+
+    A revision searches with a distance anchor, so its pool is narrower than the
+    original. Replacing outright would hide the venue the budget repair needs -
+    and would shrink what the allergen audit gets to inspect.
+    """
+    merged = list(existing or [])
+    seen = {item.get("venue_id") for item in merged}
+    for item in new or []:
+        if item.get("venue_id") not in seen:
+            merged.append(item)
+            seen.add(item.get("venue_id"))
+    return merged
+
+
+def _repair_budget(st: TripState, request: dict, party_size: int) -> bool:
+    """Swap the plan down to fit the budget. Pure arithmetic, no new searches.
+
+    Per-slot allowances cannot express the real optimum: on S3 no dinner in the
+    dataset fits an equal third of the budget, but a cheap breakfast pays for
+    it. The budget is one shared pool, so once every slot is filled this walks
+    the already-fetched candidate pools and takes the swap that clears the
+    overage with the least damage to quality.
+    """
+    limit = float(request["budget_total"])
+    changed = False
+    for _ in range(len(st.itinerary) + 1):  # bounded: one swap per stop at most
+        projected = sum(float(item.get("cost") or 0) for item in st.itinerary)
+        overage = projected - limit
+        if overage <= 0:
+            return changed
+        used = {item.get("venue_id") for item in st.itinerary}
+        options = []
+        for item in st.itinerary:
+            current_cost = float(item.get("cost") or 0)
+            for candidate in st.candidates.get(item["slot"], []):
+                if candidate.get("venue_id") in used:
+                    continue
+                saving = current_cost - candidate_cost(candidate, party_size)
+                if saving > 0:
+                    options.append((saving, candidate, item))
+        if not options:
+            return changed  # nothing cheaper anywhere; budget check reports it
+        sufficient = [o for o in options if o[0] >= overage]
+        # Enough to fix it: keep the best-rated such swap. Otherwise take the
+        # biggest saving available and loop.
+        pick = (max(sufficient, key=lambda o: (float(o[1].get("rating") or 0),
+                                               str(o[1].get("venue_id"))))
+                if sufficient else
+                max(options, key=lambda o: (o[0], str(o[1].get("venue_id")))))
+        _, candidate, item = pick
+        st.log("budget", f"{item['slot']}: {item['name']} -> {candidate['name']} "
+                         f"to fit the ${limit:.0f} budget")
+        item.update({"venue_id": candidate["venue_id"], "name": candidate["name"],
+                     "cost": candidate_cost(candidate, party_size),
+                     "lat": candidate.get("lat"), "lon": candidate.get("lon"),
+                     "source": candidate.get("source"),
+                     "why": "Swapped in to keep the plan inside the budget."})
+        changed = True
+    return changed
+
+
+def _rating_of(st: TripState, item: dict) -> float:
+    for candidate in st.candidates.get(item.get("slot"), []):
+        if candidate.get("venue_id") == item.get("venue_id"):
+            return float(candidate.get("rating") or 0)
+    return 0.0
+
+
+def _upgrade_within_budget(st: TripState, request: dict, party_size: int) -> bool:
+    """Spend real headroom on better-rated venues, never on price alone.
+
+    The per-meal allowance is an equal split, so a cheap breakfast cannot fund a
+    better dinner and the plan lands far under the limit - the "budget appears
+    non-functional" half of B7. This walks the already-fetched pools and takes
+    the biggest rating gain that still fits, so leftover budget buys quality
+    rather than being spent for its own sake.
+    """
+    limit = float(request["budget_total"])
+    changed = False
+    for _ in range(len(st.itinerary) + 1):  # bounded: one upgrade per stop
+        headroom = limit - sum(float(item.get("cost") or 0) for item in st.itinerary)
+        if headroom <= 0:
+            return changed
+        used = {item.get("venue_id") for item in st.itinerary}
+        options = []
+        for item in st.itinerary:
+            current_cost = float(item.get("cost") or 0)
+            current_rating = _rating_of(st, item)
+            for candidate in st.candidates.get(item["slot"], []):
+                if candidate.get("venue_id") in used:
+                    continue
+                extra = candidate_cost(candidate, party_size) - current_cost
+                gain = float(candidate.get("rating") or 0) - current_rating
+                if gain > 0 and 0 < extra <= headroom:
+                    options.append((gain, -extra, str(candidate.get("venue_id")),
+                                    candidate, item))
+        if not options:
+            return changed
+        *_, candidate, item = max(options)
+        st.log("budget", f"{item['slot']}: {item['name']} -> {candidate['name']} "
+                         f"(rating {_rating_of(st, item)} -> {candidate.get('rating')}, "
+                         f"${headroom:.0f} headroom)")
+        item.update({"venue_id": candidate["venue_id"], "name": candidate["name"],
+                     "cost": candidate_cost(candidate, party_size),
+                     "lat": candidate.get("lat"), "lon": candidate.get("lon"),
+                     "source": candidate.get("source"),
+                     "why": "Upgraded using the remaining budget."})
+        changed = True
+    return changed
+
+
+def _travel_anchors(st: TripState, critic: dict) -> dict[str, tuple[float, float]]:
+    """Where each too-far stop is being travelled FROM.
+
+    This is what makes the revision loop converge (B2). The Critic says
+    "day2.dinner is too far"; without the previous stop's coordinates the
+    replacement search has no anchor and picks another distant venue, which is
+    why the loop previously burned both iterations and shipped anyway.
+    """
+    flagged = {issue.get("slot") for issue in critic.get("issues", [])
+               if issue.get("type") == "travel"}
+    by_slot = {item.get("slot"): item for item in st.itinerary}
+    anchors: dict[str, tuple[float, float]] = {}
+    for route in st.routes:
+        origin = route.get("origin") or {}
+        for leg in route.get("legs", []):
+            target = leg.get("to_slot")
+            if target not in flagged:
+                continue
+            source = by_slot.get(leg.get("from_slot"))
+            if source is None and origin.get("slot") == leg.get("from_slot"):
+                source = origin
+            if source and source.get("lat") is not None:
+                anchors[target] = (source["lat"], source["lon"])
+    return anchors
+
+
+def _merge_critics(deterministic: dict, llm: dict) -> dict:
+    """Union of both critics, deterministic findings first.
+
+    The arithmetic limits are not the model's to waive: it may add judgement the
+    rules cannot express, but it never gets to clear a measured breach. Same key
+    (slot, type) counts as one issue so a restated finding is not double-listed.
+    """
+    issues = list(deterministic.get("issues") or [])
+    seen = {(issue.get("slot"), issue.get("type")) for issue in issues}
+    for issue in llm.get("issues") or []:
+        key = (issue.get("slot"), issue.get("type"))
+        if key not in seen:
+            issues.append(issue)
+            seen.add(key)
+    return {"verdict": "revise" if issues else "approved", "issues": issues}
+
+
+def _drop_invalid_slots(critic: dict, days: int) -> tuple[dict, list[str]]:
+    """Keep the valid issues and discard off-vocabulary ones.
+
+    The slot guard exists so a sloppy LLM slot never triggers the wrong re-plan.
+    It used to void the whole verdict, which would now throw away the
+    deterministic findings as well - one malformed slot must not be able to
+    clear a real constraint breach.
+    """
+    kept, bad = [], []
+    for issue in critic.get("issues") or []:
+        if is_valid_slot(str(issue.get("slot", "")), days=days):
+            kept.append(issue)
+        else:
+            bad.append(issue.get("slot"))
+    return ({**critic, "verdict": "revise" if kept else "approved",
+             "issues": kept}, bad)
 
 
 def _critic_with_llm(client: FuelixClient, st: TripState, request: dict) -> dict:
@@ -544,34 +952,50 @@ async def _run_tier2_async(request: dict) -> TripState:
     for slot, error in attraction_failures:
         st.log("attraction", f"{slot}: {type(error).__name__}: {error}")
 
+    if _repair_budget(st, request, party_size):
+        st.log("budget", "repaired the plan to fit the budget")
+    # Before the Critic, so any travel cost of an upgrade is still checked.
+    _upgrade_within_budget(st, request, party_size)
     st.routes = await _compute_routes_async(st.itinerary, request)
     st.log("route", f"{sum(len(day.get('legs', [])) for day in st.routes)} travel legs computed")
     st.budget = check_budget(st.itinerary, float(request["budget_total"]))
     for iteration in range(1, config.CRITIC_MAX_ITERATIONS + 1):
-        try:
-            critic = _deterministic_critic(st, request, days) if client is None else _critic_with_llm(client, st, request)
-        except Exception as error:
-            critic = _deterministic_critic(st, request, days)
-            st.log("critic", f"LLM failed ({type(error).__name__}); used deterministic check")
-        ok, bad = validate_critic_output(critic, days=days)
-        if not ok:
-            st.log("critic", f"Rejected malformed slots {bad}; stopping revision")
-            critic = {"verdict": "approved", "issues": [], "iteration": iteration}
+        # The measured limits always run. The LLM is layered on top for the
+        # judgement calls arithmetic cannot make, never as a way around a rule.
+        critic = _deterministic_critic(st, request, days)
+        if client is not None:
+            try:
+                critic = _merge_critics(critic, _critic_with_llm(client, st, request))
+            except Exception as error:
+                st.log("critic", f"LLM critic failed ({type(error).__name__}); "
+                                 "kept the deterministic verdict")
+        critic, bad = _drop_invalid_slots(critic, days)
+        if bad:
+            st.log("critic", f"Ignored off-vocabulary slots {bad}")
         critic["iteration"] = iteration
         st.critic = critic
         st.log("critic", f"verdict={critic.get('verdict')} issues={len(critic.get('issues', []))}")
         if critic.get("verdict") != "revise" or not critic.get("issues") or iteration == config.CRITIC_MAX_ITERATIONS:
             break
         revise_slots = {issue["slot"] for issue in critic["issues"]}
+        anchors = _travel_anchors(st, critic)
         restaurant_tasks = [task for task in tasks if task["slot"] in revise_slots]
         if restaurant_tasks:
             reserved = {item["venue_id"] for item in st.itinerary
                          if item["slot"] not in revise_slots and item.get("venue_id")}
+            # Whatever the surviving stops already cost is spent. Splitting only
+            # what is left stops a closer venue from blowing the budget.
+            kept_cost = sum(float(item.get("cost") or 0) for item in st.itinerary
+                            if item["slot"] not in revise_slots)
+            budget_per_slot = max(
+                0.0, float(request["budget_total"]) - kept_cost) / len(restaurant_tasks)
             replacement, replacement_candidates, _ = await _execute_restaurants_tier2(
-                restaurant_tasks, request, client, reserved=reserved)
+                restaurant_tasks, request, client, reserved=reserved, anchors=anchors,
+                budget_per_slot=budget_per_slot)
             for task in restaurant_tasks:
                 slot = task["slot"]
-                st.candidates[slot] = replacement_candidates.get(slot, st.candidates.get(slot, []))
+                st.candidates[slot] = _merge_candidates(
+                    st.candidates.get(slot, []), replacement_candidates.get(slot, []))
                 pick = replacement.get(slot)
                 old = next((item for item in st.itinerary if item["slot"] == slot), None)
                 if pick and old:
@@ -579,14 +1003,21 @@ async def _run_tier2_async(request: dict) -> TripState:
                                 "cost": round(pick.get("avg_meal_cost", 0) * party_size, 2),
                                 "lat": pick.get("lat"), "lon": pick.get("lon"),
                                 "source": pick.get("source"), "why": pick.get("why", "Verified replacement")})
+            _repair_budget(st, request, party_size)
             st.routes = await _compute_routes_async(st.itinerary, request)
             st.budget = check_budget(st.itinerary, float(request["budget_total"]))
             st.log("revise", f"reselected slots: {sorted(revise_slots)}")
         attraction_slots = [slot for slot in revise_slots if ".attraction" in slot]
         if attraction_slots:
+            attraction_limit = _attraction_limit(days)
+            leg_minutes, _, _ = _travel_limits(request)
+            radius = _within_km(
+                leg_minutes, str(request.get("transport_mode", "WALK")).lower())
             replacement_results = await asyncio.gather(
-                *(asyncio.to_thread(search_attractions, request["city"], None, 2)
-                  for _ in attraction_slots),
+                *(asyncio.to_thread(search_attractions, request["city"], None,
+                                    attraction_limit, anchors.get(slot),
+                                    radius if anchors.get(slot) else None)
+                  for slot in attraction_slots),
                 return_exceptions=True,
             )
             for slot, result in zip(attraction_slots, replacement_results):
@@ -603,9 +1034,20 @@ async def _run_tier2_async(request: dict) -> TripState:
                                     "source": attraction.get("source"), "why": "Verified replacement attraction"})
             st.routes = await _compute_routes_async(st.itinerary, request)
             st.budget = check_budget(st.itinerary, float(request["budget_total"]))
+    # Never ship a violated constraint silently. A judge finding a breach the
+    # system did not flag is far worse than the system admitting it.
+    unresolved = (st.critic.get("issues", [])
+                  if st.critic.get("verdict") == "revise" else [])
+    if unresolved:
+        # Logged as "ship", not "critic": this is the shipping decision, and the
+        # critic trace lines are what bounds the revision loop.
+        st.log("ship", f"SHIPPED WITH {len(unresolved)} UNRESOLVED ISSUES after "
+                       f"{config.CRITIC_MAX_ITERATIONS} iterations")
+    st.itinerary = _apply_visiting_order(st.itinerary, st.routes)
     st.meta = {"tier": 2, "elapsed_s": round(time.time() - t0, 2), "mock_llm": config.MOCK_MODE,
                "data_backend": config.current_backend(), "tool_backends": last_backend_report(),
                "latency_budget_s": config.LATENCY_BUDGET_S,
+               "unresolved_issues": unresolved,
                "llm_calls": client.telemetry["llm_calls"] if client else 0,
                "tokens": dict(client.telemetry) if client else {
                    "llm_calls": 0, "input_tokens": 0, "output_tokens": 0,
@@ -649,12 +1091,18 @@ def run_tier1(request: dict) -> TripState:
         chosen = []
         used_venue_ids = set()
         for task in tasks:
+            # price_level_max was hardcoded to 2 here, excluding 14 of 60 venues
+            # and leaving Tier 1 chronically under budget (B7). The per-slot
+            # allowance in score_candidate is the real affordability gate.
             cands = search_restaurants(
                 city=request["city"], meal=task["meal"], cuisine=cuisine,
-                price_level_max=2, exclude_flags=exclude, limit=20)
+                price_level_max=_max_price_level(task["budget_per_person"]),
+                exclude_flags=exclude, limit=20)
             st.candidates[task["slot"]] = cands
-            pick = next((candidate for candidate in cands
-                         if candidate["venue_id"] not in used_venue_ids), None)
+            pick = best_candidate(
+                cands, used=used_venue_ids,
+                budget_remaining=task["budget_per_person"] * party_size,
+                party_size=party_size)
             if pick:
                 used_venue_ids.add(pick["venue_id"])
                 chosen.append({

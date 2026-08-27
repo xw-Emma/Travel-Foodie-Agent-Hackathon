@@ -84,9 +84,14 @@ TOOL_SCHEMAS = [
             "meal": {"type": "string", "enum": ["breakfast", "lunch", "dinner"]},
             "area": {"type": "string"},
             "cuisine": {"type": "string"},
-            "price_level_max": {"type": "integer", "minimum": 1, "maximum": 4},
+            "price_level_max": {"type": "integer", "minimum": 1, "maximum": 5},
             "exclude_flags": {"type": "array", "items": {"type": "string"}},
-            "limit": {"type": "integer"}},
+            "limit": {"type": "integer"},
+            "near": {"type": "array", "items": {"type": "number"},
+                     "minItems": 2, "maxItems": 2,
+                     "description": "[lat, lon] anchor, usually the previous stop."},
+            "within_km": {"type": "number",
+                          "description": "Max distance from `near`."}},
             "required": ["city", "meal"]}}},
     {"type": "function", "function": {
         "name": "get_venue_details",
@@ -98,7 +103,12 @@ TOOL_SCHEMAS = [
         "description": "Find tourist attractions in a city, optionally by category.",
         "parameters": {"type": "object", "properties": {
             "city": {"type": "string"}, "category": {"type": "string"},
-            "limit": {"type": "integer"}},
+            "limit": {"type": "integer"},
+            "near": {"type": "array", "items": {"type": "number"},
+                     "minItems": 2, "maxItems": 2,
+                     "description": "[lat, lon] anchor, usually the previous stop."},
+            "within_km": {"type": "number",
+                          "description": "Max distance from `near`."}},
             "required": ["city"]}}},
     {"type": "function", "function": {
         "name": "estimate_travel",
@@ -106,8 +116,24 @@ TOOL_SCHEMAS = [
         "parameters": {"type": "object", "properties": {
             "from_lat": {"type": "number"}, "from_lon": {"type": "number"},
             "to_lat": {"type": "number"}, "to_lon": {"type": "number"},
-            "mode": {"type": "string", "enum": ["walk", "drive"]}},
+            "mode": {"type": "string",
+                     "enum": ["walk", "drive", "transit", "bicycle"]}},
             "required": ["from_lat", "from_lon", "to_lat", "to_lon"]}}},
+    {"type": "function", "function": {
+        "name": "compute_day_route",
+        "description": ("Route a whole day in one call: ordered stops, per-leg "
+                        "distance/time/geometry, and day totals. Prefer this "
+                        "over repeated estimate_travel calls for one day."),
+        "parameters": {"type": "object", "properties": {
+            "origin": {"type": "object",
+                       "description": "Day start: {lat, lon, name, slot}."},
+            "stops": {"type": "array", "items": {"type": "object"},
+                      "description": "Stops to visit: [{lat, lon, name, slot}]."},
+            "mode": {"type": "string",
+                     "enum": ["WALK", "DRIVE", "TRANSIT", "BICYCLE"]},
+            "optimize": {"type": "boolean",
+                         "description": "Let the router reorder the stops."}},
+            "required": ["stops"]}}},
     {"type": "function", "function": {
         "name": "check_budget",
         "description": "Sum item costs against the total budget limit (pure math).",
