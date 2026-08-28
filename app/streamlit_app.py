@@ -20,7 +20,7 @@ from app import ui_components as ui  # noqa: E402
 from src import config, diagnostics, vocabulary  # noqa: E402
 from src.orchestrator import run_tier1, run_tier2  # noqa: E402
 from src.request_model import Origin, TripRequest  # noqa: E402
-from src.tools import resolve_origin  # noqa: E402
+from src.tools import classify_city, resolve_origin  # noqa: E402
 
 st.set_page_config(page_title="Travel Foodie Agent",
                    page_icon=":material/restaurant:", layout="wide")
@@ -46,7 +46,7 @@ def render_result(state: dict) -> None:
     budget = state.get("budget") or {}
 
     ui.render_banners(meta, request, budget)
-    ui.render_budget(budget)
+    ui.render_budget(budget, request)
 
     st.subheader("Itinerary")
     ui.render_day_tabs(state.get("itinerary") or [], state.get("routes") or [],
@@ -115,16 +115,42 @@ with st.form("trip_form"):
             help="Each day's route is planned from here.")
         transport = st.radio("Getting around", vocabulary.TRANSPORT_MODES,
                              horizontal=True)
+        meals = st.multiselect(
+            "Meals to plan", vocabulary.MEAL_SLOTS,
+            default=list(vocabulary.MEAL_SLOTS),
+            help="Deselect what you are not eating out. The budget is split "
+                 "across the meals you keep.")
     with right:
-        budget_total = st.number_input("Total budget (CAD)", min_value=1.0,
-                                       value=500.0, step=25.0)
+        budget_amount = st.number_input("Budget (CAD)", min_value=1.0,
+                                        value=500.0, step=25.0)
+        budget_basis = st.radio(
+            "Budget is", ["total", "per_person"], horizontal=True,
+            format_func=lambda value: "for the whole party" if value == "total"
+            else "per person",
+            help="Say which you mean — the same number means very different "
+                 "trips for a party of four.")
         party_size = st.number_input("Party size", 1, 20, 2)
-        cuisines = st.multiselect("Restaurant types", vocabulary.restaurant_types(),
+        # Offline can only offer cuisines the dataset holds; live can search
+        # the world. The list follows the backend the sidebar selected.
+        cuisines = st.multiselect("Restaurant types",
+                                  vocabulary.restaurant_types(backend),
                                   default=["international"])
-        attraction_types = st.multiselect("Attraction types",
-                                          vocabulary.attraction_types())
-        allergies = st.multiselect("Allergies (hard exclusion)",
-                                   vocabulary.CANONICAL_ALLERGENS)
+        food_only = st.checkbox(
+            "Food only — no attractions", value=False,
+            help="Plans meals and the routes between them, nothing else.")
+        attraction_types = st.multiselect(
+            "Attraction types", vocabulary.attraction_types(),
+            disabled=food_only,
+            help="Leave empty for any kind." if not food_only else
+                 "Disabled while Food only is on.")
+        # A checkbox rather than a "none" entry in the list: "none" alongside
+        # "peanut" would be a state with no sensible meaning.
+        no_allergies = st.checkbox("No allergies", value=True)
+        allergies = st.multiselect(
+            "Allergies (hard exclusion)", vocabulary.CANONICAL_ALLERGENS,
+            disabled=no_allergies,
+            help="Uncheck 'No allergies' to pick from the nine the dataset "
+                 "flags explicitly.")
 
     with st.expander("How far will you go?"):
         far_left, far_right = st.columns(2)
@@ -141,6 +167,11 @@ with st.form("trip_form"):
 
 if not vocabulary.covers_city(city):
     ui.dataset_city_warning(city, backend, vocabulary.dataset_cities())
+
+# Checked on submit only: it costs an API call, and a country here quietly
+# poisons every text query ("restaurant dinner in Portugal").
+if submitted:
+    ui.city_scope_warning(classify_city(city))
 
 if submitted:
     start_date = trip_dates[0] if isinstance(trip_dates, (list, tuple)) and trip_dates else None
@@ -164,10 +195,13 @@ if submitted:
                                 f"{resolved['label']} instead.")
                 trip = TripRequest(
                     city=city, start_date=start_date, days=min(max(days, 1), 7),
-                    origin=origin, budget_total=float(budget_total),
-                    party_size=int(party_size),
+                    origin=origin, budget_total=float(budget_amount),
+                    budget_basis=budget_basis, party_size=int(party_size),
+                    meals=meals or list(vocabulary.MEAL_SLOTS),
                     cuisines=cuisines or ["international"],
-                    attraction_types=attraction_types, allergies=allergies,
+                    attraction_types=[] if food_only else attraction_types,
+                    attractions_per_day=0 if food_only else 1,
+                    allergies=[] if no_allergies else allergies,
                     search_radius_km=float(search_radius),
                     max_leg_minutes=float(max_leg),
                     max_daily_travel_minutes=float(max_daily),

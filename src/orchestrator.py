@@ -77,14 +77,33 @@ def _search_area(request: dict) -> tuple[tuple[float, float] | None, float | Non
     return (anchor, float(radius)) if anchor else (None, None)
 
 
+def _request_meals(request: dict) -> list[str]:
+    """Meals to plan, in the order a day is eaten.
+
+    Absent or unrecognised means all three, so every caller that predates the
+    setting - eval/scenarios.json, the CLI, existing scripts - behaves exactly
+    as before.
+    """
+    chosen = {str(meal).strip().lower() for meal in (request.get("meals") or [])}
+    ordered = [meal for meal in MEALS if meal in chosen]
+    return ordered or list(MEALS)
+
+
+def _attractions_per_day(request: dict) -> int:
+    """0 means a food-only trip: plan no attractions at all."""
+    value = request.get("attractions_per_day")
+    return 1 if value is None else max(0, int(value))
+
+
 def _budget_per_person(request: dict, days: int) -> float:
     party_size = max(1, int(request.get("party_size", 1)))
-    return float(request["budget_total"]) / days / len(MEALS) / party_size
+    meals = len(_request_meals(request))
+    return float(request["budget_total"]) / days / meals / party_size
 
 
 def _plan_with_llm(client: FuelixClient, request: dict) -> dict:
     days = int(request.get("days", 2))
-    valid_slots = slot_ids(days, attractions_per_day=0)
+    valid_slots = slot_ids(days, meals=_request_meals(request), attractions_per_day=0)
     system = (config.PROMPTS_DIR / "planner.md").read_text(encoding="utf-8")
     user = (
         "Split this request into exactly one restaurant task for every valid slot. "
@@ -408,7 +427,7 @@ def _local_restaurant_tasks(request: dict) -> list[dict]:
             "allergies": request.get("allergies", []),
             "cuisines": request.get("cuisines", []),
         },
-    } for day in range(1, days + 1) for meal in MEALS]
+    } for day in range(1, days + 1) for meal in _request_meals(request)]
 
 
 def _pick_local_task(task: dict, request: dict, used: set[str],
@@ -553,6 +572,8 @@ async def _execute_attractions_tier2(
     request: dict, days: int, category: str | None = None,
     attractions_per_day: int = 1,
 ) -> tuple[dict[str, dict], list[tuple[str, Exception]]]:
+    if attractions_per_day <= 0:
+        return {}, []   # food-only trip
     limit = _attraction_limit(days, attractions_per_day)
     trip_anchor, trip_radius = _search_area(request)
     results = await asyncio.gather(
@@ -1041,9 +1062,10 @@ async def _run_tier2_async(request: dict) -> TripState:
     for slot, error in failures:
         st.log("restaurant", f"{slot}: {type(error).__name__}: {error}")
 
+    attractions_per_day = _attractions_per_day(request)
     attractions, attraction_failures = await _execute_attractions_tier2(
-        request, days, attractions_per_day=int(request.get("attractions_per_day", 1) or 1))
-    for day in range(1, days + 1):
+        request, days, attractions_per_day=attractions_per_day)
+    for day in range(1, days + 1) if attractions_per_day else ():
         slot = f"day{day}.attraction1"
         attraction = attractions.get(slot)
         st.candidates[slot] = search_attractions(request["city"], limit=2) if attraction else []

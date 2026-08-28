@@ -116,6 +116,31 @@ def _within_radius(rows: list[dict], near: tuple[float, float] | None,
     return kept
 
 
+def classify_place(query: str) -> dict:
+    """Ask Places what kind of thing a name refers to.
+
+    Used to catch a country typed into the city box. "Portugal" builds the text
+    query "restaurant dinner in Portugal", which returns whatever Google feels
+    like across a whole nation - that is how a venue literally named "Restaurant
+    International" ended up in a Lisbon itinerary.
+    """
+    data = _post(f"{config.PLACES_BASE_URL}/places:searchText",
+                 {"textQuery": query, "maxResultCount": 1},
+                 "places.id,places.displayName,places.formattedAddress,places.types")
+    places = data.get("places") or []
+    if not places:
+        return {"kind": "unknown", "name": query, "types": []}
+    place = places[0]
+    types = place.get("types") or []
+    for kind in ("locality", "country", "administrative_area_level_1",
+                 "administrative_area_level_2"):
+        if kind in types:
+            return {"kind": kind, "name": (place.get("displayName") or {}).get("text"),
+                    "address": place.get("formattedAddress"), "types": types}
+    return {"kind": "other", "name": (place.get("displayName") or {}).get("text"),
+            "address": place.get("formattedAddress"), "types": types}
+
+
 def search_restaurants(city: str, meal: str, area: str | None = None,
                        cuisine: str | None = None,
                        price_level_max: int | None = None,

@@ -217,6 +217,25 @@ CITY_CENTRES = {
 }
 
 
+def classify_city(city: str) -> dict:
+    """What kind of place the city box actually names.
+
+    Returns {"kind": locality | country | administrative_area_level_* | other |
+    unknown | not_checked}. Only live backends can answer; offline returns
+    not_checked rather than guessing, because a wrong "that's a country"
+    warning is worse than none.
+    """
+    name = (city or "").strip()
+    if not name:
+        return {"kind": "unknown", "name": name}
+    if not _want_live():
+        return {"kind": "not_checked", "name": name}
+    try:
+        return _places.classify_place(name)
+    except Exception as exc:  # noqa: BLE001 - a failed check must not block planning
+        return {"kind": "not_checked", "name": name, "error": type(exc).__name__}
+
+
 def resolve_origin(address: str, city: str) -> dict:
     """Turn a typed address into {lat, lon, label, resolved, source}.
 

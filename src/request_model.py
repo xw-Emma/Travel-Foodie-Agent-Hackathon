@@ -4,9 +4,12 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Literal
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 TransportMode = Literal["WALK", "DRIVE", "TRANSIT", "BICYCLE"]
+
+# Kept in the order a day is eaten, so a slot list is always chronological.
+MEAL_SLOTS = ("breakfast", "lunch", "dinner")
 
 
 class Origin(BaseModel):
@@ -30,7 +33,17 @@ class TripRequest(BaseModel):
     days: int = Field(default=2, ge=1, le=7)
     origin: Origin = Field(default_factory=Origin)
     budget_total: float = Field(default=500, gt=0)
+    # Whether budget_total is the whole party's budget or one person's. The
+    # orchestrator only ever sees an absolute total (see to_request_dict), so
+    # this stays a presentation concern and no downstream maths changes.
+    budget_basis: Literal["total", "per_person"] = "total"
     party_size: int = Field(default=2, ge=1)
+
+    # Which meals to plan. "Lunch and dinner only" was previously inexpressible,
+    # so a lunch+dinner request silently got a breakfast too - three meals of
+    # budget for a two-meal trip, which is most of why such plans read as
+    # wildly over budget.
+    meals: list[str] = Field(default_factory=lambda: list(MEAL_SLOTS))
     cuisines: list[str] = Field(default_factory=lambda: ["international"])
     attraction_types: list[str] = Field(default_factory=list)
     allergies: list[str] = Field(default_factory=list)
@@ -43,6 +56,28 @@ class TripRequest(BaseModel):
     data_backend: Literal["auto", "live", "local"] = "auto"
     # Backward-compatible alias used by the existing scenarios and orchestrator.
     max_walk_km: float | None = Field(default=None, gt=0)
+
+    @field_validator("meals")
+    @classmethod
+    def _known_meals_in_order(cls, value: list[str]) -> list[str]:
+        """Drop anything that is not a real meal slot and restore day order.
+
+        The slot vocabulary is closed, and "dinner, breakfast" must still plan
+        breakfast first - the order here decides the order of the day.
+        """
+        chosen = {str(meal).strip().lower() for meal in value}
+        ordered = [meal for meal in MEAL_SLOTS if meal in chosen]
+        if not ordered:
+            raise ValueError(f"pick at least one of {list(MEAL_SLOTS)}")
+        return ordered
+
+    @computed_field
+    @property
+    def effective_budget_total(self) -> float:
+        """The absolute budget for the whole party, whichever basis was used."""
+        if self.budget_basis == "per_person":
+            return round(self.budget_total * self.party_size, 2)
+        return float(self.budget_total)
 
     @computed_field
     @property
@@ -76,6 +111,12 @@ class TripRequest(BaseModel):
         data.pop("dates", None)
         data.pop("weekdays", None)
         data.pop("day_labels", None)
+        # The orchestrator's budget maths is absolute and stays that way; the
+        # per-person basis is resolved here, at the boundary, and the amount the
+        # user actually typed is kept alongside it for display.
+        data.pop("effective_budget_total", None)
+        data["budget_entered"] = float(self.budget_total)
+        data["budget_total"] = self.effective_budget_total
         if data.get("max_walk_km") is None:
             data.pop("max_walk_km", None)
         return data

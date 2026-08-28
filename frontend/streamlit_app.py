@@ -101,16 +101,27 @@ with st.form("trip_form"):
                                     placeholder="e.g. 120 9 Ave SE, Calgary")
         transport = st.radio("Getting around", vocabulary.TRANSPORT_MODES,
                              horizontal=True)
+        meals = st.multiselect("Meals to plan", vocabulary.MEAL_SLOTS,
+                               default=list(vocabulary.MEAL_SLOTS))
     with right:
-        budget_total = st.number_input("Total budget (CAD)", min_value=1.0,
-                                       value=500.0, step=25.0)
+        budget_amount = st.number_input("Budget (CAD)", min_value=1.0,
+                                        value=500.0, step=25.0)
+        budget_basis = st.radio(
+            "Budget is", ["total", "per_person"], horizontal=True,
+            format_func=lambda value: "for the whole party" if value == "total"
+            else "per person")
         party_size = st.number_input("Party size", 1, 20, 2)
-        cuisines = st.multiselect("Restaurant types", vocabulary.restaurant_types(),
+        cuisines = st.multiselect("Restaurant types",
+                                  vocabulary.restaurant_types(backend),
                                   default=["international"])
+        food_only = st.checkbox("Food only — no attractions", value=False)
         attraction_types = st.multiselect("Attraction types",
-                                          vocabulary.attraction_types())
+                                          vocabulary.attraction_types(),
+                                          disabled=food_only)
+        no_allergies = st.checkbox("No allergies", value=True)
         allergies = st.multiselect("Allergies (hard exclusion)",
-                                   vocabulary.CANONICAL_ALLERGENS)
+                                   vocabulary.CANONICAL_ALLERGENS,
+                                   disabled=no_allergies)
 
     with st.expander("How far will you go?"):
         far_left, far_right = st.columns(2)
@@ -140,11 +151,14 @@ if submitted:
         "start_date": start_date.isoformat() if start_date else None,
         "days": min(max(days, 1), 7),
         "origin": {"address": origin_text or None, "label": origin_text or "Your location"},
-        "budget_total": float(budget_total),
+        "budget_total": float(budget_amount),
+        "budget_basis": budget_basis,
         "party_size": int(party_size),
+        "meals": meals or list(vocabulary.MEAL_SLOTS),
         "cuisines": cuisines or ["international"],
-        "attraction_types": attraction_types,
-        "allergies": allergies,
+        "attraction_types": [] if food_only else attraction_types,
+        "attractions_per_day": 0 if food_only else 1,
+        "allergies": [] if no_allergies else allergies,
         "search_radius_km": float(search_radius),
         "max_leg_minutes": float(max_leg),
         "max_daily_travel_minutes": float(max_daily),
@@ -176,7 +190,7 @@ if "last_state" in st.session_state:
     state = st.session_state.last_state
     meta = state["meta"]
     ui.render_banners(meta, state["request"], state["budget"])
-    ui.render_budget(state["budget"])
+    ui.render_budget(state["budget"], state["request"])
     st.subheader("Itinerary")
     ui.render_day_tabs(state["itinerary"], state["routes"],
                        day_labels=state.get("day_labels"),

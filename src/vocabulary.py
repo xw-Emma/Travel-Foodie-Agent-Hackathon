@@ -41,6 +41,25 @@ CANONICAL_ALLERGENS = _seed_module().CANONICAL_ALLERGENS
 
 TRANSPORT_MODES = ("WALK", "TRANSIT", "BICYCLE", "DRIVE")
 
+MEAL_SLOTS = ("breakfast", "lunch", "dinner")
+
+# Cuisines worth offering in LIVE mode. The offline list is whatever the Calgary
+# CSVs happen to contain, which is the wrong vocabulary once the city is Lisbon:
+# Google Places will happily search "portuguese restaurant in Lisbon", but
+# "portuguese" is not in the dataset, so offering it offline would return
+# nothing. Hence two lists, chosen by backend.
+LIVE_CUISINES = (
+    "portuguese", "spanish", "greek", "italian", "french", "turkish",
+    "lebanese", "moroccan", "german", "british", "irish", "belgian",
+    "scandinavian", "eastern_european", "georgian", "japanese", "korean",
+    "chinese", "sichuan", "cantonese", "thai", "vietnamese", "malaysian",
+    "indonesian", "filipino", "indian", "nepalese", "sri_lankan", "mexican",
+    "peruvian", "brazilian", "argentinian", "caribbean", "ethiopian",
+    "nigerian", "middle_eastern", "mediterranean", "american", "canadian",
+    "seafood", "steakhouse", "bbq", "vegetarian", "vegan", "bakery", "cafe",
+    "brunch", "dessert", "street_food", "tapas", "fine_dining", "bistro",
+)
+
 
 def _rows(path) -> list[dict]:
     if not path.exists():
@@ -71,9 +90,24 @@ def dataset_cities() -> list[str]:
 
 
 @functools.cache
-def restaurant_types() -> list[str]:
-    """Cuisine buckets first, then every cuisine present in the data."""
-    return list(CUISINE_BUCKETS) + _values("*_restaurants.csv", "cuisine")
+def dataset_cuisines() -> list[str]:
+    """Every cuisine actually present in the offline CSVs."""
+    return _values("*_restaurants.csv", "cuisine")
+
+
+@functools.cache
+def restaurant_types(backend: str = "local") -> list[str]:
+    """Cuisine options for a backend.
+
+    Offline can only offer what the dataset holds. Live can offer any cuisine,
+    because the value goes into a Places text query - so an `auto` or `live` run
+    gets the world list, with the dataset's own cuisines folded in so switching
+    backends never silently drops a choice the user already made.
+    """
+    buckets = list(CUISINE_BUCKETS)
+    if (backend or "local").lower() == "local":
+        return buckets + dataset_cuisines()
+    return buckets + sorted(set(LIVE_CUISINES) | set(dataset_cuisines()))
 
 
 @functools.cache

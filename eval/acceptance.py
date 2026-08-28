@@ -14,7 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.orchestrator import run_tier2  # noqa: E402
+from src.orchestrator import _request_meals, run_tier2  # noqa: E402
+from src.state import MEALS  # noqa: E402
 from src import config  # noqa: E402
 from src.state import is_valid_slot, slot_ids  # noqa: E402
 from src.tools import get_venue_details  # noqa: E402
@@ -46,12 +47,21 @@ def check_budget_ok(st, request) -> list[str]:
 
 
 def check_has_meals(st, request) -> list[str]:
+    """Every requested meal on every day. A request for lunch+dinner only must
+    produce exactly that - not a breakfast nobody asked to pay for."""
     days = int(request.get("days", 2))
-    expected = days * 3
-    meals = [it for it in st.itinerary if any(m in it["slot"] for m in ("breakfast", "lunch", "dinner"))]
+    wanted = _request_meals(request)
+    expected = days * len(wanted)
+    meals = [it for it in st.itinerary
+             if it["slot"].split(".", 1)[-1] in wanted]
+    fails = []
     if len(meals) < expected:
-        return [f"expected {expected} meals, got {len(meals)}"]
-    return []
+        fails.append(f"expected {expected} meals, got {len(meals)}")
+    unwanted = sorted({it["slot"] for it in st.itinerary
+                       if it["slot"].split(".", 1)[-1] in set(MEALS) - set(wanted)})
+    if unwanted:
+        fails.append(f"planned meals that were not requested: {unwanted}")
+    return fails
 
 
 def check_party_size(st, request) -> list[str]:
@@ -178,7 +188,7 @@ def check_budget_utilisation(st, request) -> list[str]:
 def check_valid_slots(st, request) -> list[str]:
     days = int(request.get("days", 2))
     # An itinerary entry must be a fillable slot — never a day scope or origin.
-    fillable = set(slot_ids(days, attractions_per_day=1))
+    fillable = set(slot_ids(days, meals=_request_meals(request), attractions_per_day=1))
     fails = [f"invalid itinerary slot: {slot}" for slot
              in sorted({item.get("slot") for item in st.itinerary} - fillable) if slot]
     # A Critic issue may additionally name a day-level scope.

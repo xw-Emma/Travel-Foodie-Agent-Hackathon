@@ -103,7 +103,8 @@ def render_banners(meta: dict, request: dict, budget: dict) -> None:
             icon=":material/health_and_safety:")
 
 
-def render_budget(budget: dict) -> None:
+def render_budget(budget: dict, request: dict | None = None) -> None:
+    request = request or {}
     columns = st.columns(4)
     columns[0].metric("Projected", f"${float(budget.get('projected', 0)):,.2f}")
     columns[1].metric("Budget", f"${float(budget.get('limit', 0)):,.2f}")
@@ -112,6 +113,16 @@ def render_budget(budget: dict) -> None:
     used = (float(budget.get("projected") or 0) / limit) if limit else 0
     columns[3].metric("Status", str(budget.get("status", "unknown")).title(),
                       f"{used:.0%} used")
+    if request.get("budget_basis") == "per_person":
+        party = int(request.get("party_size") or 1)
+        entered = float(request.get("budget_entered") or 0)
+        st.caption(f"${entered:,.2f} per person × {party} = "
+                   f"${limit:,.2f} total for the party.")
+    # Costs come from Google's price BAND, not a real menu price, so a figure
+    # like $60.00 reads far more precise than it is.
+    if str(request.get("data_backend")) != "local":
+        st.caption("Live costs are estimated from Google's price level, not "
+                   "actual menu prices — treat them as a band, not a quote.")
 
 
 # --------------------------------------------------------------- day tabs
@@ -289,6 +300,33 @@ def render_diagnostics(report: dict) -> None:
         st.error("data/foodie.sqlite is missing — run `python data/seed.py`.")
     st.caption(f"Cache {'on' if report.get('cache_enabled') else 'off'} · "
                f"LLM {'mock' if report.get('mock_llm') else 'Fuel iX'}")
+
+
+def city_scope_warning(classification: dict) -> None:
+    """Warn when the city box holds something that is not a city.
+
+    A country there poisons every text query - "restaurant dinner in Portugal"
+    returns whatever Google picks across a nation, which is how a venue called
+    "Restaurant International" ended up standing in for Lisbon dining.
+    """
+    kind = (classification or {}).get("kind")
+    name = (classification or {}).get("name") or "that"
+    if kind in ("locality", "not_checked", "unknown", None):
+        return
+    if kind == "country":
+        st.warning(
+            f"**{name} is a country, not a city.** Every search is phrased "
+            f"\"…in {name}\", so results can come from anywhere in it. Name a "
+            "city — Lisbon, Porto — for results that hang together.",
+            icon=":material/public:")
+    elif kind.startswith("administrative_area"):
+        st.warning(
+            f"**{name} is a region, not a city.** Naming the city itself gives "
+            "tighter, more walkable results.", icon=":material/public:")
+    else:
+        st.info(
+            f"**{name}** did not resolve to a city. If results look scattered, "
+            "try the city name on its own.", icon=":material/public:")
 
 
 def dataset_city_warning(city: str, backend: str, covered_cities: list[str]) -> None:
