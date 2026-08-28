@@ -29,6 +29,12 @@ def _travel_mode(mode: str) -> str:
     return TRAVEL_MODES.get((mode or "walk").lower(), "WALK")
 
 
+# Named so the cache key can include it: a key that ignores the field mask
+# serves a response missing the fields the caller now asks for.
+LEG_FIELD_MASK = ("routes.duration,routes.distanceMeters,"
+                  "routes.polyline.encodedPolyline")
+
+
 def _seconds(duration) -> float:
     """Routes returns duration as a string like "1234s"."""
     return float(str(duration or "0s").rstrip("s") or 0)
@@ -48,7 +54,7 @@ def estimate_travel(from_lat: float, from_lon: float,
         "languageCode": "en-US",
         "units": "METRIC",
     }
-    key = cache.make_key("routes_v2_polyline", payload)
+    key = cache.make_key("routes", payload, LEG_FIELD_MASK)
     hit = cache.get(key)
     if hit is not None:
         hit["_cache_hit"] = True
@@ -57,7 +63,7 @@ def estimate_travel(from_lat: float, from_lon: float,
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": config.GOOGLE_MAPS_API_KEY,
-        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
+        "X-Goog-FieldMask": LEG_FIELD_MASK,
     }
     req = urllib.request.Request(
         config.ROUTES_BASE_URL, data=json.dumps(payload).encode("utf-8"),
@@ -141,7 +147,7 @@ def compute_day_route(origin: dict, stops: list[dict], mode: str = "WALK",
         "languageCode": "en-US",
         "units": "METRIC",
     }
-    key = cache.make_key("routes_day_v1", payload)
+    key = cache.make_key("routes_day", payload, DAY_ROUTE_FIELD_MASK)
     hit = cache.get(key)
     if hit is None:
         headers = {

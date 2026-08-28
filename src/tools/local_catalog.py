@@ -58,7 +58,9 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                        exclude_flags: list[str] | None = None,
                        limit: int = 5,
                        near: tuple[float, float] | None = None,
-                       within_km: float | None = None) -> list[dict]:
+                       within_km: float | None = None,
+                       min_rating: float | None = None,
+                       min_reviews: int | None = None) -> list[dict]:
     """
     Ranked by rating. `exclude_flags` (e.g. ["peanut_risk"]) drops flagged
     venues IN CODE - the allergen hard constraint is physically enforced at
@@ -80,6 +82,12 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
     if price_level_max:
         q += " AND price_level <= ?"
         params.append(price_level_max)
+    if min_rating is not None:
+        q += " AND rating >= ?"
+        params.append(float(min_rating))
+    if min_reviews is not None:
+        q += " AND review_count >= ?"
+        params.append(int(min_reviews))
     q += " ORDER BY rating DESC, review_count DESC LIMIT ?"
     # An anchored search re-ranks by distance afterwards, so it needs the whole
     # eligible pool rather than the top slice by rating.

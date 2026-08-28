@@ -44,6 +44,12 @@ class TripRequest(BaseModel):
     # budget for a two-meal trip, which is most of why such plans read as
     # wildly over budget.
     meals: list[str] = Field(default_factory=lambda: list(MEAL_SLOTS))
+    # Quality gate. Free to enforce: rating and userRatingCount are already in
+    # the Places search field mask, and both columns exist offline. None means
+    # no threshold, so every caller predating this is unaffected.
+    min_rating: float | None = Field(default=None, ge=0, le=5)
+    min_reviews: int | None = Field(default=None, ge=0)
+
     cuisines: list[str] = Field(default_factory=lambda: ["international"])
     attraction_types: list[str] = Field(default_factory=list)
     allergies: list[str] = Field(default_factory=list)

@@ -116,6 +116,61 @@ def _within_radius(rows: list[dict], near: tuple[float, float] | None,
     return kept
 
 
+def _neighborhood(components: list[dict] | None) -> str | None:
+    """Best available neighbourhood, or None.
+
+    Measured against real Lisbon data: many venues carry no sublocality or
+    neighborhood component at all, only a locality. None means unknown and must
+    stay unknown - a district name invented to fill the gap is a fabricated
+    fact about a real business.
+    """
+    if not components:
+        return None
+    wanted = ("neighborhood", "sublocality_level_1", "sublocality")
+    for kind in wanted:
+        for component in components:
+            if kind in (component.get("types") or []):
+                return component.get("longText")
+    return None
+
+
+DAYS_FROM_SUNDAY = ("sun", "mon", "tue", "wed", "thu", "fri", "sat")
+
+
+def is_open_at(hours: dict, weekday: str, hhmm: str) -> bool | None:
+    """Opening-hours check against Google's regularOpeningHours shape.
+
+    Google returns `periods` with numeric weekdays (0 = Sunday) and separate
+    open/close times; the offline dataset uses {"mon": {"open", "close"}}. The
+    two are unrelated, which is why the local checker answered None here and
+    live plans went out with their opening hours never checked at all.
+    """
+    periods = (hours or {}).get("periods")
+    if not periods:
+        return None
+    try:
+        target_day = DAYS_FROM_SUNDAY.index(str(weekday)[:3].lower())
+        hour, minute = (int(part) for part in str(hhmm).split(":"))
+    except (ValueError, IndexError):
+        return None
+    target = hour * 60 + minute
+    open_that_day = False
+    for period in periods:
+        start, end = period.get("open") or {}, period.get("close") or {}
+        if start.get("day") != target_day:
+            continue
+        open_that_day = True
+        start_minutes = int(start.get("hour", 0)) * 60 + int(start.get("minute", 0))
+        if not end:
+            return True   # open 24h from this point
+        end_minutes = int(end.get("hour", 0)) * 60 + int(end.get("minute", 0))
+        if end.get("day") != start.get("day"):
+            end_minutes += 24 * 60   # closes after midnight
+        if start_minutes <= target <= end_minutes:
+            return True
+    return False if open_that_day or periods else None
+
+
 def classify_place(query: str) -> dict:
     """Ask Places what kind of thing a name refers to.
 
@@ -147,7 +202,9 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                        exclude_flags: list[str] | None = None,
                        limit: int = 5,
                        near: tuple[float, float] | None = None,
-                       within_km: float | None = None) -> list[dict]:
+                       within_km: float | None = None,
+                       min_rating: float | None = None,
+                       min_reviews: int | None = None) -> list[dict]:
     bits = ["restaurant", meal]
     if cuisine:
         bits.insert(0, cuisine)
@@ -160,6 +217,7 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
         "places.id", "places.displayName", "places.formattedAddress",
         "places.location", "places.rating", "places.userRatingCount",
         "places.priceLevel", "places.types", "places.primaryType",
+        "places.addressComponents",
     ])
     data = _post(f"{config.PLACES_BASE_URL}/places:searchText",
                  {"textQuery": text_query, "maxResultCount": max(limit * 2, 8),
@@ -177,6 +235,14 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
         pl = _price_level_int(p.get("priceLevel"))
         if price_level_max is not None and pl > price_level_max:
             continue
+        # rating and userRatingCount are already in the field mask, so this
+        # quality gate costs nothing extra - no second call, no bigger SKU.
+        rating = float(p.get("rating") or 0)
+        reviews = int(p.get("userRatingCount") or 0)
+        if min_rating is not None and rating < float(min_rating):
+            continue
+        if min_reviews is not None and reviews < int(min_reviews):
+            continue
         loc = p.get("location") or {}
         name = (p.get("displayName") or {}).get("text") or "Unknown"
         out.append({
@@ -188,6 +254,7 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
             "rating": p.get("rating") or 0.0,
             "review_count": p.get("userRatingCount") or 0,
             "area": area,
+            "neighborhood": _neighborhood(p.get("addressComponents")),
             "address": p.get("formattedAddress"),
             "lat": loc.get("latitude"),
             "lon": loc.get("longitude"),
@@ -205,7 +272,11 @@ def get_venue_details(venue_id: str) -> dict:
     field_mask = ",".join([
         "id", "displayName", "formattedAddress", "location", "rating",
         "userRatingCount", "priceLevel", "regularOpeningHours",
-        "primaryType", "types", "reviews",
+        "primaryType", "types", "reviews", "addressComponents",
+        # Reservation facts. These push the call into a higher SKU band, so it
+        # is made ONLY for the venues that made the final itinerary - never for
+        # a whole candidate pool (20 candidates x 6 slots would be ~33 s).
+        "websiteUri", "nationalPhoneNumber",
     ])
     key = cache.make_key("places_details", venue_id, field_mask)
     hit = cache.get(key)
@@ -238,6 +309,16 @@ def get_venue_details(venue_id: str) -> dict:
         "avg_meal_cost": _meal_cost(pl),
         "cuisine": cuisine,
         "hours": p.get("regularOpeningHours") or {},
+        "neighborhood": _neighborhood(p.get("addressComponents")),
+        "website": p.get("websiteUri"),
+        "phone": p.get("nationalPhoneNumber"),
+        # Already inside the field mask and previously discarded, so this data
+        # was being paid for and thrown away.
+        "reviews": [{
+            "text": ((review.get("text") or {}).get("text") or "").strip(),
+            "language": (review.get("text") or {}).get("languageCode"),
+            "rating": review.get("rating"),
+        } for review in (p.get("reviews") or [])],
         "dietary_flags": _infer_flags(cuisine, None),
         "verify_with_restaurant": True,
         "source": "google_places",

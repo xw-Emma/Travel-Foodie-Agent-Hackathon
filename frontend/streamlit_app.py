@@ -128,6 +128,14 @@ with st.form("trip_form"):
         with far_left:
             search_radius = st.slider("Search radius from the centre (km)",
                                       1.0, 25.0, 5.0, 0.5)
+            min_rating = st.slider(
+                "Minimum Google rating", 0.0, 5.0, 0.0, 0.1,
+                help="0 = no minimum. Enforced in code against the rating "
+                     "Google returns; a plan that cannot meet it says so "
+                     "rather than quietly settling for less.")
+            min_reviews = st.number_input(
+                "Minimum review count", 0, 100000, 0, 50,
+                help="0 = no minimum.")
             days_fallback = st.number_input(
                 "Days (used when no dates are picked)", 1, 7, 2)
         with far_right:
@@ -160,6 +168,8 @@ if submitted:
         "attractions_per_day": 0 if food_only else 1,
         "allergies": [] if no_allergies else allergies,
         "search_radius_km": float(search_radius),
+        "min_rating": min_rating or None,
+        "min_reviews": int(min_reviews) or None,
         "max_leg_minutes": float(max_leg),
         "max_daily_travel_minutes": float(max_daily),
         "transport_mode": transport,
@@ -195,7 +205,8 @@ if "last_state" in st.session_state:
     ui.render_day_tabs(state["itinerary"], state["routes"],
                        day_labels=state.get("day_labels"),
                        max_daily_minutes=float(
-                           state["request"].get("max_daily_travel_minutes") or 120.0))
+                           state["request"].get("max_daily_travel_minutes") or 120.0),
+                       enrichment=meta.get("enrichment"))
     st.subheader("Map")
     ui.render_map(state["itinerary"], state["routes"])
     with st.expander("Agent trace", expanded=True):

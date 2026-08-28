@@ -126,9 +126,70 @@ def render_budget(budget: dict, request: dict | None = None) -> None:
 
 
 # --------------------------------------------------------------- day tabs
+def render_venue_detail(entry: dict) -> None:
+    """One stop, with verifiable facts kept visibly apart from model commentary.
+
+    The separation is the point. Facts go in a table with their source; anything
+    the model wrote is quoted and shown with what it was drawn from; claims the
+    data cannot support are listed as unverifiable rather than quietly omitted,
+    because an omitted limitation reads as a satisfied requirement.
+    """
+    facts = entry.get("facts") or {}
+    comment = entry.get("comment") or {}
+
+    st.markdown("**Verified facts**")
+    rows = [
+        ("Name", facts.get("name")),
+        ("Neighbourhood", facts.get("neighborhood")
+         or "unknown — Google lists no district for this venue"),
+        ("Rating", f"{facts.get('rating')} ({facts.get('review_count')} reviews)"
+         if facts.get("rating") is not None else "unknown"),
+        ("Price level", facts.get("price_level")),
+        ("Address", facts.get("address")),
+        ("Website", facts.get("website") or "not published"),
+        ("Phone", facts.get("phone") or "not published"),
+    ]
+    cost = facts.get("cost_per_person") or {}
+    if cost:
+        label = ("estimated from Google's price band"
+                 if cost.get("basis") == "price_band_estimate" else "dataset value")
+        rows.append(("Cost per person", f"${cost.get('value'):,.2f} — {label}"))
+    # Every value is stringified: the column mixes text, numbers and None, and
+    # Arrow refuses a mixed-type column outright.
+    st.dataframe(pd.DataFrame([{"Field": key, "Value": str(value)}
+                               for key, value in rows if value is not None]),
+                 width="stretch", hide_index=True)
+    st.caption(f"Source: `{facts.get('source')}` · fetched {facts.get('fetched_at')}")
+
+    dishes = comment.get("dishes_mentioned_in_reviews") or {}
+    st.markdown("**Mentioned in reviews**")
+    if dishes.get("dishes"):
+        for item in dishes["dishes"]:
+            st.markdown(f"- **{item['dish']}**")
+            if item.get("quote"):
+                # Shown as a quotation because it is somebody's review, not a
+                # claim this system is making.
+                st.caption(f"> …{item['quote']}…  — review #{item['review_index'] + 1}")
+        st.caption(f"Drawn from the {dishes.get('review_count', 0)} reviews Google "
+                   "returns. Not a recommendation — just what reviewers named.")
+    else:
+        st.caption(dishes.get("note") or "No dishes were named in the reviews.")
+
+    reservation = comment.get("reservation") or {}
+    if reservation.get("text"):
+        st.markdown(f"**Booking** — {reservation['text']}")
+
+    unverifiable = entry.get("unverifiable") or {}
+    if unverifiable:
+        for claim, reason in unverifiable.items():
+            st.warning(f"**{claim.title()}: UNVERIFIABLE.** {reason}",
+                       icon=":material/help:")
+
+
 def render_day_tabs(itinerary: list[dict], routes: list[dict],
                     day_labels: list[str] | None = None,
-                    max_daily_minutes: float = 120.0) -> None:
+                    max_daily_minutes: float = 120.0,
+                    enrichment: list[dict] | None = None) -> None:
     """One tab per day: stops in visiting order, travel between them, running cost."""
     days = sorted({_day_of(item.get("slot", "")) for item in itinerary} - {0})
     if not days:
@@ -177,8 +238,14 @@ def render_day_tabs(itinerary: list[dict], routes: list[dict],
                 st.error(f"{summary} — over the {max_daily_minutes:.0f} min daily limit.")
             else:
                 st.caption(summary)
+            detail_by_slot = {entry.get("slot"): entry
+                              for entry in (enrichment or [])}
             for stop in stops:
-                if stop.get("why"):
+                entry = detail_by_slot.get(stop.get("slot"))
+                if entry:
+                    with st.expander(f"{stop.get('name')} — facts and sources"):
+                        render_venue_detail(entry)
+                elif stop.get("why"):
                     st.caption(f"**{stop.get('name')}** — {stop['why']}")
 
 

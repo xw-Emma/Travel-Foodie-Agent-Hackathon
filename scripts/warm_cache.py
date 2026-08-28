@@ -28,6 +28,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src import config  # noqa: E402
+from src.tools import cache  # noqa: E402
 from src.orchestrator import run_tier2  # noqa: E402
 
 DEMO_REQUEST = {
@@ -82,16 +83,19 @@ def main() -> int:
     requests = load_requests(args.scenarios)
     token = config.set_backend_override(args.backend)
     first_state = None
+    # Everything written here is demo insurance and gets the long TTL, so a
+    # cache warmed on Monday still answers on Thursday.
     try:
-        for index, request in enumerate(requests, 1):
-            started = time.time()
-            state = run_tier2(dict(request))
-            first_state = first_state or state
-            backends = (state.meta or {}).get("tool_backends", {})
-            print(f"[{index}/{len(requests)}] {request.get('city')} "
-                  f"{request.get('days')}d ${request.get('budget_total')} "
-                  f"-> {len(state.itinerary)} stops in {time.time() - started:.1f}s "
-                  f"| {backends.get('restaurants')} / {backends.get('travel')}")
+      with cache.pin_writes():
+          for index, request in enumerate(requests, 1):
+              started = time.time()
+              state = run_tier2(dict(request))
+              first_state = first_state or state
+              backends = (state.meta or {}).get("tool_backends", {})
+              print(f"[{index}/{len(requests)}] {request.get('city')} "
+                    f"{request.get('days')}d ${request.get('budget_total')} "
+                    f"-> {len(state.itinerary)} stops in {time.time() - started:.1f}s "
+                    f"| {backends.get('restaurants')} / {backends.get('travel')}")
     finally:
         config._backend_override.reset(token)
 

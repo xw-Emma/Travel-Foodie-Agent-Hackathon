@@ -81,22 +81,29 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                        exclude_flags: list[str] | None = None,
                        limit: int = 5,
                        near: tuple[float, float] | None = None,
-                       within_km: float | None = None) -> list[dict]:
+                       within_km: float | None = None,
+                       min_rating: float | None = None,
+                       min_reviews: int | None = None) -> list[dict]:
     if _want_live():
         try:
             rows = _places.search_restaurants(
                 city, meal, area=area, cuisine=cuisine,
                 price_level_max=price_level_max,
                 exclude_flags=exclude_flags, limit=limit,
-                near=near, within_km=within_km)
+                near=near, within_km=within_km,
+                min_rating=min_rating, min_reviews=min_reviews)
             if not rows and near is not None:
                 # The radius is a preference, not a hard constraint. Dropping to
                 # a different BACKEND because a circle was drawn too tight would
                 # swap live data for offline data over a soft filter.
+                # The quality gate is NOT relaxed here: min_rating/min_reviews
+                # are a stated requirement, and quietly dropping them to fill a
+                # slot is exactly the silent widening this must never do.
                 rows = _places.search_restaurants(
                     city, meal, area=area, cuisine=cuisine,
                     price_level_max=price_level_max,
-                    exclude_flags=exclude_flags, limit=limit)
+                    exclude_flags=exclude_flags, limit=limit,
+                    min_rating=min_rating, min_reviews=min_reviews)
             if rows:
                 _record("restaurants", "google_places")
                 return rows
@@ -112,7 +119,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
         city, meal, area=area, cuisine=cuisine,
         price_level_max=price_level_max,
         exclude_flags=exclude_flags, limit=limit,
-        near=near, within_km=within_km)
+        near=near, within_km=within_km,
+        min_rating=min_rating, min_reviews=min_reviews)
     _record("restaurants", "local_dataset", fell_back=_want_live())
     return rows
 
@@ -215,6 +223,22 @@ CITY_CENTRES = {
     "vancouver": (49.2827, -123.1207),
     "montreal": (45.5019, -73.5674),
 }
+
+
+def is_open_at(details: dict, weekday: str, hhmm: str) -> bool | None:
+    """Is this venue open then? None when the hours cannot be read.
+
+    Dispatches on the SHAPE of the hours, not on the configured backend: an
+    `auto` run mixes live and offline venues in one itinerary. Google returns
+    `periods` with numeric weekdays; the offline dataset uses
+    {"mon": {"open", "close"}}. Before this, only the offline shape was
+    understood, so every live plan shipped with its opening hours unchecked
+    while the panel had nothing to say about it.
+    """
+    hours = (details or {}).get("hours") or {}
+    if isinstance(hours, dict) and hours.get("periods"):
+        return _places.is_open_at(hours, weekday, hhmm)
+    return _local.is_open_at(details, weekday, hhmm)
 
 
 def classify_city(city: str) -> dict:

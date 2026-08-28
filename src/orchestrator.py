@@ -15,15 +15,15 @@ import time
 import urllib.error
 from datetime import date
 
-from . import config, demo_mode
+from . import config, demo_mode, enrich
 from .fuelix_client import (FuelixClient, FuelixError, parse_json_reply,
                             run_tool_loop)
 from .state import TripState, MEALS, TOOL_SCHEMAS, is_valid_slot, slot_ids
 from .tools import (CITY_CENTRES, TOOL_IMPLS, MODE_SPEED_KMH, compute_day_route,
                     haversine_km,
                     reset_backend_report, search_restaurants, get_venue_details,
-                    search_attractions, check_budget, last_backend_report)
-from .tools.local_catalog import is_open_at
+                    search_attractions, check_budget, is_open_at,
+                    last_backend_report)
 
 
 # ------------------------------------------------------- Critic slot guard
@@ -261,6 +261,8 @@ def _pick_restaurant_with_tool_loop(
             "price_level_max": _max_price_level(task["budget_per_person"]),
             "exclude_flags": exclude,
             "limit": max(int(kwargs.get("limit") or 0), 8),
+            "min_rating": request.get("min_rating"),
+            "min_reviews": request.get("min_reviews"),
             # On a revision this restricts the Places search to a circle around
             # the previous stop, so the live path converges like the local one.
             "near": anchor or trip_anchor,
@@ -452,7 +454,9 @@ def _pick_local_task(task: dict, request: dict, used: set[str],
         return search_restaurants(
             city=request["city"], meal=task["meal"], cuisine=cuisine,
             price_level_max=price_ceiling, exclude_flags=exclude, limit=20,
-            near=search_anchor, within_km=within_km)
+            near=search_anchor, within_km=within_km,
+            min_rating=request.get("min_rating"),
+            min_reviews=request.get("min_reviews"))
 
     cuisine = cuisines[0] if cuisines else None
     radius = _within_km(max_leg_minutes, mode) if anchor else trip_radius
@@ -549,7 +553,9 @@ async def _execute_restaurants_tier2(
         rows = _drop_closed(search_restaurants(
             city=request["city"], meal=task["meal"], cuisine=None,
             price_level_max=_max_price_level(task["budget_per_person"]),
-            exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20),
+            exclude_flags=[f"{allergy}_risk" for allergy in allergies], limit=20,
+            min_rating=request.get("min_rating"),
+            min_reviews=request.get("min_reviews")),
             _slot_opening(request, slot))
         observed[slot] = rows
         replacement = choose(rows, task)
@@ -767,17 +773,29 @@ def _drop_closed(rows: list[dict], opening: tuple[str, str] | None) -> list[dict
     if opening is None:
         return rows
     weekday, hhmm = opening
-    return [row for row in rows
-            if is_open_at(get_venue_details(row["venue_id"]), weekday, hhmm) is not False]
+    kept = []
+    for row in rows:
+        # Offline details are a SQLite read, so filtering the whole pool is
+        # free. Live details are a billed call each, and a pool is up to 20
+        # venues per slot - checking them all here would be ~120 calls and
+        # roughly 33 s of the 60 s budget. Live venues are therefore checked by
+        # the Critic on the FINAL picks only, where it is 8 calls that cache.
+        if row.get("source") != "local_dataset":
+            kept.append(row)
+            continue
+        if is_open_at(get_venue_details(row["venue_id"]), weekday, hhmm) is not False:
+            kept.append(row)
+    return kept
 
 
 def _hours_issues(st: TripState, request: dict) -> list[dict]:
     """Flag a stop scheduled on a day it is closed.
 
     Needs start_date: without a real date there is no weekday to check against.
-    Only local-dataset stops are checked, because is_open_at() reads the seeded
-    {'mon': {'open','close'}} shape; Google returns regularOpeningHours in a
-    different structure, where it answers None and unknown is treated as a pass.
+    Both backends are checked now - tools.is_open_at dispatches on the shape of
+    the hours - so a live plan no longer ships with this silently skipped.
+    Unknown hours still answer None and are treated as a pass; only a definite
+    "closed" raises an issue.
     """
     weekdays = {}
     for day in range(1, int(request.get("days", 2)) + 1):
@@ -790,7 +808,7 @@ def _hours_issues(st: TripState, request: dict) -> list[dict]:
     for item in st.itinerary:
         slot = str(item.get("slot", ""))
         weekday = weekdays.get(_day_number(slot))
-        if not weekday or item.get("source") != "local_dataset":
+        if not weekday:
             continue
         suffix = slot.split(".", 1)[-1]
         hhmm = MEAL_TIMES.get(suffix, ATTRACTION_TIME)
@@ -947,6 +965,115 @@ def _upgrade_within_budget(st: TripState, request: dict, party_size: int) -> boo
                      "why": "Upgraded using the remaining budget."})
         changed = True
     return changed
+
+
+# Reading reviews is the only optional part of a run. If the plan itself has
+# already used most of the latency budget, the facts are still gathered and the
+# review read is skipped with a note - a slow extra beats a plan that misses the
+# deadline, and silently dropping it would look like "no dishes were mentioned".
+ENRICH_LLM_DEADLINE_S = 32.0
+
+
+async def _enrich_itinerary(st: TripState, client, started_at: float) -> list[dict]:
+    """Fetch details for the FINAL picks only, then split facts from comment.
+
+    The cost rule that makes this affordable: details are pulled for the eight
+    stops that made the itinerary, never for a candidate pool. Measured live,
+    a details call is ~280 ms cold and ~1 ms cached, so the final picks cost
+    about two seconds against a sixty second budget; the whole pool would be
+    roughly a hundred and twenty calls and half the budget.
+    """
+    stops = [item for item in st.itinerary if item.get("venue_id")]
+    if not stops:
+        return []
+    details_list = await asyncio.gather(
+        *(asyncio.to_thread(get_venue_details, item["venue_id"]) for item in stops),
+        return_exceptions=True,
+    )
+    by_id = {candidate.get("venue_id"): candidate
+             for pool in st.candidates.values() for candidate in pool}
+    clean = []
+    for item, details in zip(stops, details_list):
+        if isinstance(details, Exception):
+            st.log("enrich", f"{item['slot']}: no details ({type(details).__name__})")
+            details = {}
+        clean.append((item, details))
+
+    # Reading the reviews is ONE call for the whole itinerary, not one per stop.
+    # Per-stop calls cost ~20 s of a 60 s budget in sequence; firing all eight
+    # at once fixed the latency and earned a gateway 429 instead.
+    spent = time.time() - started_at
+    venues = [((by_id.get(item["venue_id"]) or item).get("name") or "",
+               (details or {}).get("reviews") or [])
+              for item, details in clean]
+    if spent > ENRICH_LLM_DEADLINE_S:
+        st.log("enrich", f"skipped reading reviews: {spent:.0f}s of the "
+                         f"{config.LATENCY_BUDGET_S}s budget already spent")
+        dish_evidence = enrich.dishes_for_venues(None, venues)
+    else:
+        try:
+            dish_evidence = await asyncio.to_thread(
+                enrich.dishes_for_venues, client, venues)
+        except Exception as error:  # noqa: BLE001 - never fail a plan over this
+            st.log("enrich", f"review reading failed ({type(error).__name__})")
+            dish_evidence = enrich.dishes_for_venues(None, venues)
+
+    enriched = [enrich.enrich_stop(item, by_id.get(item["venue_id"]) or item,
+                                   details, client, dishes=dishes)
+                for (item, details), dishes in zip(clean, dish_evidence)]
+    named = sum(len(e["comment"]["dishes_mentioned_in_reviews"]["dishes"])
+                for e in enriched)
+    st.log("enrich", f"detailed {len(enriched)} stops; {named} dish mention(s) "
+                     "verified against their source review")
+    return enriched
+
+
+def _quality_shortfall(st: TripState, request: dict) -> list[dict]:
+    """Stops that do not meet the stated rating / review thresholds.
+
+    The gate is applied in the tool layer, but the widening ladder and the
+    budget repair both pick from pools, so this re-checks the FINAL itinerary
+    rather than trusting that every path honoured it. A requirement that could
+    not be met has to be reported, never quietly dropped to fill the slot -
+    which is also exactly what the verification panel needs as input.
+    """
+    min_rating = request.get("min_rating")
+    min_reviews = request.get("min_reviews")
+    if min_rating is None and min_reviews is None:
+        return []
+    by_id = {candidate.get("venue_id"): candidate
+             for pool in st.candidates.values() for candidate in pool}
+    shortfall = []
+    # A slot with nothing in it is the loudest shortfall there is: the gate was
+    # honoured, and nothing in the city cleared it. An empty plan that explains
+    # nothing is the failure this whole rule exists to prevent.
+    filled = {item.get("slot") for item in st.itinerary}
+    gate = " and ".join(
+        part for part in (f"rating >= {min_rating}" if min_rating is not None else "",
+                          f"{min_reviews}+ reviews" if min_reviews is not None else "")
+        if part)
+    for slot in st.candidates:
+        if slot in filled or ".attraction" in slot:
+            continue
+        shortfall.append({"slot": slot, "name": None,
+                          "detail": f"no venue met {gate}"})
+    for item in st.itinerary:
+        if ".attraction" in item.get("slot", ""):
+            continue
+        candidate = by_id.get(item.get("venue_id")) or {}
+        rating = candidate.get("rating")
+        reviews = candidate.get("review_count")
+        reasons = []
+        if min_rating is not None and rating is not None and float(rating) < float(min_rating):
+            reasons.append(f"rating {rating} < {min_rating}")
+        if min_reviews is not None and reviews is not None and int(reviews) < int(min_reviews):
+            reasons.append(f"{reviews} reviews < {min_reviews}")
+        if rating is None and reviews is None:
+            reasons.append("no rating data to check against")
+        if reasons:
+            shortfall.append({"slot": item.get("slot"), "name": item.get("name"),
+                              "detail": "; ".join(reasons)})
+    return shortfall
 
 
 def _travel_anchors(st: TripState, critic: dict) -> dict[str, tuple[float, float]]:
@@ -1165,6 +1292,8 @@ async def _run_tier2_async(request: dict) -> TripState:
                                     "source": attraction.get("source"), "why": "Verified replacement attraction"})
             st.routes = await _compute_routes_async(st.itinerary, request)
             st.budget = check_budget(st.itinerary, float(request["budget_total"]))
+    enrichment = await _enrich_itinerary(st, client, t0)
+
     # Never ship a violated constraint silently. A judge finding a breach the
     # system did not flag is far worse than the system admitting it.
     unresolved = (st.critic.get("issues", [])
@@ -1179,6 +1308,8 @@ async def _run_tier2_async(request: dict) -> TripState:
                "data_backend": config.current_backend(), "tool_backends": last_backend_report(),
                "latency_budget_s": config.LATENCY_BUDGET_S,
                "unresolved_issues": unresolved,
+               "quality_shortfall": _quality_shortfall(st, request),
+               "enrichment": enrichment,
                "llm_fallback": llm_fallback,
         "llm_fallback_message": llm_fallback_message,
                "llm_fallback_message": llm_fallback_message,
@@ -1264,7 +1395,9 @@ def run_tier1(request: dict) -> TripState:
             cands = search_restaurants(
                 city=request["city"], meal=task["meal"], cuisine=cuisine,
                 price_level_max=_max_price_level(task["budget_per_person"]),
-                exclude_flags=exclude, limit=20)
+                exclude_flags=exclude, limit=20,
+                min_rating=request.get("min_rating"),
+                min_reviews=request.get("min_reviews"))
             st.candidates[task["slot"]] = cands
             pick = best_candidate(
                 cands, used=used_venue_ids,
