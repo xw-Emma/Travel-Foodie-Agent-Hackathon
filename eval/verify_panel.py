@@ -159,6 +159,25 @@ check("verified requirements carry a fetch timestamp",
       bool(by_name(live_report, "Minimum rating")["fetched_at"]), True)
 config._backend_override.reset(token)
 
+section("G the hierarchy keeps every honesty signal it had")
+from app import ui_components as ui  # noqa: E402
+check("a chip exists for each real state",
+      sorted(ui.STATE_CHIPS), ["failed", "inferred", "unverifiable", "verified"])
+check("the full-sentence labels survive for the legend and the rows",
+      all(state in ui.STATE_ICONS for state in ui.STATE_CHIPS), True)
+check("inferred is still its own state, not folded into verified",
+      ui.STATE_CHIPS["inferred"] != ui.STATE_CHIPS["verified"], True)
+check("unverifiable still says a data source is missing",
+      "No data source" in ui.STATE_ICONS["unverifiable"][1], True)
+
+live_report = verification.verify(live_request, live.to_json())
+check("the summary still counts every state the panel shows",
+      all(state in live_report["summary"] for state in ui.STATE_CHIPS), True)
+check("and the counts add up to what is displayed",
+      sum(live_report["summary"][state] for state in ui.STATE_CHIPS)
+      + live_report["summary"]["not_requested"],
+      len(live_report["requirements"]))
+
 print()
 if fails:
     print(f"{len(fails)} FAILURE(S):")

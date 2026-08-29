@@ -144,6 +144,15 @@ STATE_ICONS = {
     "not_requested": ("–", "Not requested"),
 }
 
+# Short forms for the counters. The full sentence belongs in the legend and on
+# the row that needs explaining, not squeezed under a number.
+STATE_CHIPS = {
+    "verified": "Verified",
+    "inferred": "Inferred",
+    "failed": "Not met",
+    "unverifiable": "Unverifiable",
+}
+
 
 def render_verification_panel(report: dict) -> None:
     """Every stated requirement, and how each answer was actually arrived at.
@@ -157,38 +166,43 @@ def render_verification_panel(report: dict) -> None:
     summary = report.get("summary") or {}
     requirements = [r for r in (report.get("requirements") or [])
                     if r.get("state") != "not_requested"]
-    headline = summary.get("headline", "")
-    if summary.get("failed"):
-        st.error(f"**{headline}**", icon=":material/rule:")
-    elif summary.get("unverifiable") or summary.get("inferred"):
-        st.warning(f"**{headline}**", icon=":material/rule:")
-    else:
-        st.success(f"**{headline}**", icon=":material/rule:")
 
-    rows = []
-    for item in requirements:
-        icon, _ = STATE_ICONS.get(item.get("state"), ("?", ""))
-        rows.append({
-            "": icon,
+    # Four counters instead of a six-column table. This was the densest thing on
+    # the page and the most important, which is exactly backwards: the count of
+    # each state is the answer, and the row-by-row detail is the evidence.
+    counts = st.columns(4)
+    for column, state in zip(counts, ("verified", "inferred", "failed",
+                                      "unverifiable")):
+        icon, _ = STATE_ICONS[state]
+        column.metric(f"{icon} {STATE_CHIPS[state]}", summary.get(state, 0))
+
+    needs_attention = [item for item in requirements
+                       if item.get("state") != "verified"]
+    if not needs_attention:
+        st.success("Every stated requirement was verified against data.",
+                   icon=":material/task_alt:")
+
+    # Only what is not plainly verified gets a line, and it carries its own
+    # reason. A verified requirement needs no explanation; an inferred or
+    # unverifiable one is useless without it.
+    for item in needs_attention:
+        icon, label = STATE_ICONS.get(item.get("state"), ("?", ""))
+        st.markdown(f"{icon} **{item.get('requirement')}** — {item.get('actual')}")
+        if item.get("reason"):
+            st.caption(f"{label}: {item['reason']}")
+
+    with st.expander(f"Show every check ({len(requirements)})"):
+        st.dataframe(pd.DataFrame([{
+            "": STATE_ICONS.get(item.get("state"), ("?", ""))[0],
             "Requirement": item.get("requirement"),
             "Expected": str(item.get("expected")),
             "Found": str(item.get("actual")),
             "Source": str(item.get("source") or "—"),
             "Checked": str(item.get("fetched_at") or "—"),
-        })
-    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
-
-    # Anything not plainly verified needs its reason spelled out, not buried.
-    for item in requirements:
-        if item.get("state") == "verified" or not item.get("reason"):
-            continue
-        icon, label = STATE_ICONS.get(item.get("state"), ("?", ""))
-        st.caption(f"{icon} **{item.get('requirement')}** — {label.lower()}: "
-                   f"{item['reason']}")
-
-    legend = " · ".join(f"{icon} {label}" for state, (icon, label)
-                        in STATE_ICONS.items() if state != "not_requested")
-    st.caption(legend)
+        } for item in requirements]), width="stretch", hide_index=True)
+        legend = " · ".join(f"{icon} {label}" for state, (icon, label)
+                            in STATE_ICONS.items() if state != "not_requested")
+        st.caption(legend)
 
 
 def render_day_summary(summary: list[dict]) -> None:
@@ -336,45 +350,64 @@ def render_day_tabs(itinerary: list[dict], routes: list[dict],
                 stops.sort(key=lambda item: rank.get(item.get("slot"), 99))
             legs = {leg.get("to_slot"): leg for leg in route.get("legs", [])}
 
-            running = 0.0
-            rows = []
-            for stop in stops:
-                leg = legs.get(stop.get("slot"))
-                running += float(stop.get("cost") or 0)
-                rows.append({
-                    "Stop": stop.get("slot", "").split(".", 1)[-1],
-                    "Venue": stop.get("name", ""),
-                    "Travel to here": (f"{leg['minutes']:.0f} min · {leg['km']} km"
-                                       if leg and leg.get("minutes") is not None else "start"),
-                    "Cost": f"${float(stop.get('cost') or 0):,.2f}",
-                    "Running total": f"${running:,.2f}",
-                    "Source": source_badge(stop.get("source")),
-                })
-            st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
-
+            day_cost = sum(float(stop.get("cost") or 0) for stop in stops)
             totals = route.get("totals") or {}
             minutes = float(totals.get("minutes") or 0)
-            summary = (f"Travel {minutes:.0f} min · {totals.get('km', 0)} km "
-                       f"· {len(stops)} stops · ${running:,.2f}")
-            if route.get("optimized"):
-                summary += " · route order optimized"
-            if route.get("optimize_rejected"):
-                summary += f" · optimization declined ({route['optimize_rejected']})"
+
+            # The day's shape in one line, before any detail. Previously this
+            # was a caption UNDER a six-column table, so the summary arrived
+            # after the thing it was meant to summarise.
+            hero = st.columns(3)
+            hero[0].metric("Stops", len(stops))
+            hero[1].metric("Cost", f"${day_cost:,.2f}")
+            hero[2].metric("Travel", f"{minutes:.0f} min",
+                           f"{totals.get('km', 0)} km")
             if minutes > max_daily_minutes:
-                st.error(f"{summary} — over the {max_daily_minutes:.0f} min daily limit.")
-            else:
-                st.caption(summary)
+                st.error(f"Over the {max_daily_minutes:.0f} min daily travel limit.",
+                         icon=":material/directions_walk:")
+            if route.get("optimized"):
+                st.caption("Route order optimized.")
+            if route.get("optimize_rejected"):
+                st.caption(f"Route order left chronological — {route['optimize_rejected']}.")
+
             detail_by_slot = {entry.get("slot"): entry
                               for entry in (enrichment or [])}
             backup_by_slot = {entry.get("slot"): entry
                               for entry in (backups or [])}
+            running = 0.0
             for stop in stops:
+                leg = legs.get(stop.get("slot"))
+                running += float(stop.get("cost") or 0)
                 entry = detail_by_slot.get(stop.get("slot"))
-                if entry:
-                    with st.expander(f"{stop.get('name')} — facts, sources and alternatives"):
-                        render_venue_detail(entry, backup_by_slot.get(stop.get("slot")))
-                elif stop.get("why"):
-                    st.caption(f"**{stop.get('name')}** — {stop['why']}")
+                facts = (entry or {}).get("facts") or {}
+                # A card, not a row in a table inside an expander inside a tab.
+                # The three facts that decide whether you want this venue go on
+                # the face; everything else stays one click away.
+                with st.container(border=True):
+                    head, cost_col = st.columns([4, 1])
+                    head.markdown(
+                        f"**{stop.get('slot', '').split('.', 1)[-1].title()} — "
+                        f"{stop.get('name', '')}**")
+                    cost_col.markdown(f"**${float(stop.get('cost') or 0):,.2f}**")
+
+                    bits = []
+                    if facts.get("rating") is not None:
+                        bits.append(f"⭐ {facts['rating']} "
+                                    f"({facts.get('review_count', '?')} reviews)")
+                    bits.append(facts.get("neighborhood") or "district unknown")
+                    bits.append(f"{leg['minutes']:.0f} min · {leg['km']} km away"
+                                if leg and leg.get("minutes") is not None
+                                else "start of the day")
+                    bits.append(f"running ${running:,.2f}")
+                    st.caption(" · ".join(str(bit) for bit in bits))
+                    st.caption(f"Source {source_badge(stop.get('source'))}")
+
+                    if entry:
+                        with st.expander("Facts, sources and alternatives"):
+                            render_venue_detail(
+                                entry, backup_by_slot.get(stop.get("slot")))
+                    elif stop.get("why"):
+                        st.caption(stop["why"])
 
 
 # ------------------------------------------------------------------- map

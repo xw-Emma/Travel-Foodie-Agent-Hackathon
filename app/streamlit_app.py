@@ -145,49 +145,49 @@ def render_intent_box(backend: str) -> None:
     see what was understood - and what was thrown away - before anything is
     searched.
     """
-    with st.expander("Describe your trip in your own words (optional)"):
-        description = st.text_area(
-            "Description", height=110, key="intent_text", label_visibility="collapsed",
-            placeholder="e.g. Full day in Lisbon, lunch and dinner only, about "
-                        "$100 per person, authentic Portuguese, rated 4.8+ with "
-                        "1000+ reviews, no chains.")
-        if st.button("Read this into the form", key="intent_go"):
-            client = None if config.MOCK_MODE else FuelixClient(timeout=30,
-                                                                max_retries=1)
-            with st.spinner("Reading your description..."):
-                draft = intent.extract(client, description, backend)
-            _apply_draft(draft)
-            st.session_state["intent_draft"] = draft
-            # Rerun so the widgets are built from the values just written.
-            st.rerun()
+    st.subheader("Describe your trip")
+    description = st.text_area(
+        "Description", height=110, key="intent_text", label_visibility="collapsed",
+        placeholder="e.g. Full day in Lisbon, lunch and dinner only, about "
+                    "$100 per person, authentic Portuguese, rated 4.8+ with "
+                    "1000+ reviews, no chains.")
+    if st.button("Read this into the form", key="intent_go"):
+        client = None if config.MOCK_MODE else FuelixClient(timeout=30,
+                                                            max_retries=1)
+        with st.spinner("Reading your description..."):
+            draft = intent.extract(client, description, backend)
+        _apply_draft(draft)
+        st.session_state["intent_draft"] = draft
+        # Rerun so the widgets are built from the values just written.
+        st.rerun()
 
-        draft = st.session_state.get("intent_draft")
-        if not draft:
-            return
-        fields = draft.get("fields") or {}
-        if fields:
-            st.success("Filled in: " + ", ".join(
-                f"**{k.replace('_', ' ')}** = {v}" for k, v in fields.items()),
-                icon=":material/edit_note:")
-        for note in draft.get("notes") or []:
-            st.info(note)
-        if draft.get("rejected"):
-            dropped = "\n".join(
-                f"- `{r['field']}`"
-                + (f" = {r['value']}" if r.get("value") else "")
-                + f" — {r['reason']}"
-                for r in draft["rejected"])
-            st.warning(
-                f"**Not used** — dropped rather than guessed at:\n\n{dropped}",
-                icon=":material/filter_alt_off:")
-        if draft.get("other_criteria"):
-            carried = "\n".join(f"- {c}" for c in draft["other_criteria"])
-            st.info(
-                "**Carried over but not checkable** — these appear in the "
-                f"verification panel as unverifiable:\n\n{carried}",
-                icon=":material/help:")
-        st.caption("Check the form below, change anything that is wrong, then "
-                   "press Plan my trip. Nothing was searched yet.")
+    draft = st.session_state.get("intent_draft")
+    if not draft:
+        return
+    fields = draft.get("fields") or {}
+    if fields:
+        st.success("Filled in: " + ", ".join(
+            f"**{k.replace('_', ' ')}** = {v}" for k, v in fields.items()),
+            icon=":material/edit_note:")
+    for note in draft.get("notes") or []:
+        st.info(note)
+    if draft.get("rejected"):
+        dropped = "\n".join(
+            f"- `{r['field']}`"
+            + (f" = {r['value']}" if r.get("value") else "")
+            + f" — {r['reason']}"
+            for r in draft["rejected"])
+        st.warning(
+            f"**Not used** — dropped rather than guessed at:\n\n{dropped}",
+            icon=":material/filter_alt_off:")
+    if draft.get("other_criteria"):
+        carried = "\n".join(f"- {c}" for c in draft["other_criteria"])
+        st.info(
+            "**Carried over but not checkable** — these appear in the "
+            f"verification panel as unverifiable:\n\n{carried}",
+            icon=":material/help:")
+    st.caption("Check the form below, change anything that is wrong, then "
+               "press Plan my trip. Nothing was searched yet.")
 
 
 # ------------------------------------------------------------------ sidebar
@@ -216,79 +216,81 @@ render_intent_box(backend)
 # widget interaction. Without it, dragging a slider fires a fresh round of
 # Places and Routes calls; the response cache absorbs repeats but not the first
 # variation of each. Only the submit button triggers a run.
-with st.form("trip_form"):
-    left, right = st.columns(2)
-    with left:
-        city = st.selectbox("City", _city_options(), index=0,
-                            accept_new_options=True, key="f_city")
-        trip_dates = st.date_input("Trip dates", value=(), min_value=date.today(),
-                                   key="f_dates",
-                                   help="Sets the weekday, so opening hours can be checked.")
-        origin_text = st.text_input(
-            "Starting point (address, hotel, or landmark)",
-            placeholder="e.g. 120 9 Ave SE, Calgary", key="f_origin",
-            help="Each day's route is planned from here.")
-        transport = st.radio("Getting around", vocabulary.TRANSPORT_MODES,
-                             horizontal=True, key="f_transport")
-        meals = st.multiselect(
-            "Meals to plan", vocabulary.MEAL_SLOTS,
-            default=list(vocabulary.MEAL_SLOTS), key="f_meals",
-            help="Deselect what you are not eating out. The budget is split "
-                 "across the meals you keep.")
-    with right:
-        budget_amount = st.number_input("Budget (CAD)", min_value=1.0,
-                                        value=500.0, step=25.0, key="f_budget")
-        budget_basis = st.radio(
-            "Budget is", ["total", "per_person"], horizontal=True,
-            format_func=lambda value: "for the whole party" if value == "total"
-            else "per person", key="f_basis",
-            help="Say which you mean — the same number means very different "
-                 "trips for a party of four.")
-        party_size = st.number_input("Party size", 1, 20, 2, key="f_party")
-        # Offline can only offer cuisines the dataset holds; live can search
-        # the world. The list follows the backend the sidebar selected.
-        cuisines = st.multiselect("Restaurant types",
-                                  _cuisine_options(backend),
-                                  default=["international"], key="f_cuisines")
-        food_only = st.checkbox(
-            "Food only — no attractions", value=False, key="f_food_only",
-            help="Plans meals and the routes between them, nothing else.")
-        attraction_types = st.multiselect(
-            "Attraction types", vocabulary.attraction_types(),
-            disabled=food_only, key="f_attraction_types",
-            help="Leave empty for any kind." if not food_only else
-                 "Disabled while Food only is on.")
-        # A checkbox rather than a "none" entry in the list: "none" alongside
-        # "peanut" would be a state with no sensible meaning.
-        no_allergies = st.checkbox("No allergies", value=True, key="f_no_allergies")
-        allergies = st.multiselect(
-            "Allergies (hard exclusion)", vocabulary.CANONICAL_ALLERGENS,
-            disabled=no_allergies, key="f_allergies",
-            help="Uncheck 'No allergies' to pick from the nine the dataset "
-                 "flags explicitly.")
+with st.expander("Fine-tune the details",
+                 expanded="intent_draft" not in st.session_state):
+  with st.form("trip_form"):
+      left, right = st.columns(2)
+      with left:
+          city = st.selectbox("City", _city_options(), index=0,
+                              accept_new_options=True, key="f_city")
+          trip_dates = st.date_input("Trip dates", value=(), min_value=date.today(),
+                                     key="f_dates",
+                                     help="Sets the weekday, so opening hours can be checked.")
+          origin_text = st.text_input(
+              "Starting point (address, hotel, or landmark)",
+              placeholder="e.g. 120 9 Ave SE, Calgary", key="f_origin",
+              help="Each day's route is planned from here.")
+          transport = st.radio("Getting around", vocabulary.TRANSPORT_MODES,
+                               horizontal=True, key="f_transport")
+          meals = st.multiselect(
+              "Meals to plan", vocabulary.MEAL_SLOTS,
+              default=list(vocabulary.MEAL_SLOTS), key="f_meals",
+              help="Deselect what you are not eating out. The budget is split "
+                   "across the meals you keep.")
+      with right:
+          budget_amount = st.number_input("Budget (CAD)", min_value=1.0,
+                                          value=500.0, step=25.0, key="f_budget")
+          budget_basis = st.radio(
+              "Budget is", ["total", "per_person"], horizontal=True,
+              format_func=lambda value: "for the whole party" if value == "total"
+              else "per person", key="f_basis",
+              help="Say which you mean — the same number means very different "
+                   "trips for a party of four.")
+          party_size = st.number_input("Party size", 1, 20, 2, key="f_party")
+          # Offline can only offer cuisines the dataset holds; live can search
+          # the world. The list follows the backend the sidebar selected.
+          cuisines = st.multiselect("Restaurant types",
+                                    _cuisine_options(backend),
+                                    default=["international"], key="f_cuisines")
+          food_only = st.checkbox(
+              "Food only — no attractions", value=False, key="f_food_only",
+              help="Plans meals and the routes between them, nothing else.")
+          attraction_types = st.multiselect(
+              "Attraction types", vocabulary.attraction_types(),
+              disabled=food_only, key="f_attraction_types",
+              help="Leave empty for any kind." if not food_only else
+                   "Disabled while Food only is on.")
+          # A checkbox rather than a "none" entry in the list: "none" alongside
+          # "peanut" would be a state with no sensible meaning.
+          no_allergies = st.checkbox("No allergies", value=True, key="f_no_allergies")
+          allergies = st.multiselect(
+              "Allergies (hard exclusion)", vocabulary.CANONICAL_ALLERGENS,
+              disabled=no_allergies, key="f_allergies",
+              help="Uncheck 'No allergies' to pick from the nine the dataset "
+                   "flags explicitly.")
 
-    with st.expander("How far will you go?"):
-        far_left, far_right = st.columns(2)
-        with far_left:
-            search_radius = st.slider("Search radius from the centre (km)",
-                                      1.0, 25.0, 5.0, 0.5, key="f_radius")
-            min_rating = st.slider(
-                "Minimum Google rating", 0.0, 5.0, 0.0, 0.1, key="f_min_rating",
-                help="0 = no minimum. Enforced in code against the rating "
-                     "Google returns; a plan that cannot meet it says so "
-                     "rather than quietly settling for less.")
-            min_reviews = st.number_input(
-                "Minimum review count", 0, 100000, 0, 50, key="f_min_reviews",
-                help="0 = no minimum.")
-            days_fallback = st.number_input(
-                "Days (used when no dates are picked)", 1, 7, 2, key="f_days")
-        with far_right:
-            max_leg = st.slider("Max travel between stops (min)", 5, 90, 25, 5,
-                                key="f_max_leg")
-            max_daily = st.slider("Max total travel per day (min)", 30, 300, 120, 15,
-                                  key="f_max_daily")
+      with st.expander("How far will you go?"):
+          far_left, far_right = st.columns(2)
+          with far_left:
+              search_radius = st.slider("Search radius from the centre (km)",
+                                        1.0, 25.0, 5.0, 0.5, key="f_radius")
+              min_rating = st.slider(
+                  "Minimum Google rating", 0.0, 5.0, 0.0, 0.1, key="f_min_rating",
+                  help="0 = no minimum. Enforced in code against the rating "
+                       "Google returns; a plan that cannot meet it says so "
+                       "rather than quietly settling for less.")
+              min_reviews = st.number_input(
+                  "Minimum review count", 0, 100000, 0, 50, key="f_min_reviews",
+                  help="0 = no minimum.")
+              days_fallback = st.number_input(
+                  "Days (used when no dates are picked)", 1, 7, 2, key="f_days")
+          with far_right:
+              max_leg = st.slider("Max travel between stops (min)", 5, 90, 25, 5,
+                                  key="f_max_leg")
+              max_daily = st.slider("Max total travel per day (min)", 30, 300, 120, 15,
+                                    key="f_max_daily")
 
-    submitted = st.form_submit_button("Plan my trip", type="primary")
+      submitted = st.form_submit_button("Plan my trip", type="primary")
 
 if not vocabulary.covers_city(city):
     ui.dataset_city_warning(city, backend, vocabulary.dataset_cities())
