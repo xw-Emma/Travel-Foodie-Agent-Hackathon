@@ -83,7 +83,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                        near: tuple[float, float] | None = None,
                        within_km: float | None = None,
                        min_rating: float | None = None,
-                       min_reviews: int | None = None) -> list[dict]:
+                       min_reviews: int | None = None,
+                       family_friendly: bool = False) -> list[dict]:
     if _want_live():
         try:
             rows = _places.search_restaurants(
@@ -91,7 +92,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                 price_level_max=price_level_max,
                 exclude_flags=exclude_flags, limit=limit,
                 near=near, within_km=within_km,
-                min_rating=min_rating, min_reviews=min_reviews)
+                min_rating=min_rating, min_reviews=min_reviews,
+                family_friendly=family_friendly)
             if not rows and near is not None:
                 # The radius is a preference, not a hard constraint. Dropping to
                 # a different BACKEND because a circle was drawn too tight would
@@ -103,7 +105,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                     city, meal, area=area, cuisine=cuisine,
                     price_level_max=price_level_max,
                     exclude_flags=exclude_flags, limit=limit,
-                    min_rating=min_rating, min_reviews=min_reviews)
+                    min_rating=min_rating, min_reviews=min_reviews,
+                    family_friendly=family_friendly)
             if rows:
                 _record("restaurants", "google_places")
                 return rows
@@ -120,7 +123,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
         price_level_max=price_level_max,
         exclude_flags=exclude_flags, limit=limit,
         near=near, within_km=within_km,
-        min_rating=min_rating, min_reviews=min_reviews)
+        min_rating=min_rating, min_reviews=min_reviews,
+        family_friendly=family_friendly)
     _record("restaurants", "local_dataset", fell_back=_want_live())
     return rows
 
@@ -146,14 +150,17 @@ def get_venue_details(venue_id: str) -> dict:
 def search_attractions(city: str, category: str | None = None,
                        limit: int = 5,
                        near: tuple[float, float] | None = None,
-                       within_km: float | None = None) -> list[dict]:
+                       within_km: float | None = None,
+                       family_friendly: bool = False) -> list[dict]:
     if _want_live():
         try:
             rows = _places.search_attractions(city, category=category, limit=limit,
-                                              near=near, within_km=within_km)
+                                              near=near, within_km=within_km,
+                                              family_friendly=family_friendly)
             if not rows and near is not None:
                 # Same reasoning as search_restaurants: widen before falling back.
-                rows = _places.search_attractions(city, category=category, limit=limit)
+                rows = _places.search_attractions(city, category=category, limit=limit,
+                                                  family_friendly=family_friendly)
             if rows:
                 _record("attractions", "google_places")
                 return rows
@@ -165,7 +172,8 @@ def search_attractions(city: str, category: str | None = None,
                 raise
             _record("attractions", f"fallback_after_error:{type(exc).__name__}", True)
     rows = _local.search_attractions(city, category=category, limit=limit,
-                                     near=near, within_km=within_km)
+                                     near=near, within_km=within_km,
+                                     family_friendly=family_friendly)
     _record("attractions", "local_dataset", fell_back=_want_live())
     return rows
 

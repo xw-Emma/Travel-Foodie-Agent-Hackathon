@@ -14,10 +14,12 @@ from src.orchestrator import (_hours_issues, _max_price_level, _repair_budget,
                               _travel_anchors, best_candidate, run_tier1,
                               run_tier2, score_candidate)
 from src.polyline import decode_polyline
-from src.state import TOOL_SCHEMAS, TripState
+from src.state import (TOOL_SCHEMAS, TripState, is_valid_slot,
+                       slot_ids)
 from src.tools import TOOL_IMPLS, compute_day_route, search_restaurants
 from src.tools import local_catalog as local
 from src.tools import routes_live
+from app import ui_components as ui
 
 fails = []
 
@@ -27,6 +29,12 @@ def check(label, got, want):
     print(f"{'PASS' if ok else 'FAIL'}  {label}: {got!r}")
     if not ok:
         fails.append(f"{label}: got {got!r} want {want!r}")
+
+
+def check_that(label, ok, detail=""):
+    print(f"{'PASS' if ok else 'FAIL'}  {label}" + (f": {detail}" if detail else ""))
+    if not ok:
+        fails.append(f"{label} {detail}")
 
 
 def section(title):
@@ -184,6 +192,77 @@ check("a stop is checked whatever source it claims",
       ["hours"])
 check("no start_date means no weekday to check",
       _hours_issues(fake, {"days": 1}), [])
+
+section("K1 the day comes back to where it started")
+# A day that starts at Union Station and never returns to it is not a day
+# anyone can actually walk. The return leg is a stop like any other, so it also
+# COUNTS towards the daily travel limit - a limit that ignores getting home is
+# not a limit.
+LOOP = dict(S1, days=2, origin={"lat": 51.0450, "lon": -114.0630,
+                                "label": "Hotel Arts"},
+            optimize_route=False)
+closed = run_tier2(dict(LOOP, return_to_origin=True))
+open_ended = run_tier2(dict(LOOP, return_to_origin=False))
+
+for route in closed.routes:
+    day = route["day"]
+    legs = route.get("legs") or []
+    last = legs[-1] if legs else {}
+    # Checked on the DRAWN line rather than on a label, so the map and the
+    # claim cannot disagree: decode_polyline gives [lon, lat] pairs.
+    end = decode_polyline(last.get("polyline") or "")[-1]
+    check(f"day {day} ends back at the origin",
+          (round(end[1], 3), round(end[0], 3)),
+          (round(LOOP["origin"]["lat"], 3), round(LOOP["origin"]["lon"], 3)))
+    check(f"day {day} says so in the leg label too",
+          (last.get("to_slot"), last.get("to")),
+          (f"day{day}.return", "back to Hotel Arts"))
+    check(f"day {day} names the return leg as a scope, not a slot",
+          route["stop_order"][-1], f"day{day}.return")
+    total = route["totals"]["minutes"]
+    check(f"day {day} total includes the return leg",
+          round(total, 1) == round(sum(float(l.get("minutes") or 0) for l in legs), 1),
+          True)
+
+check("closing the loop is what adds the time, not rounding",
+      all(c["totals"]["minutes"] > o["totals"]["minutes"]
+          for c, o in zip(closed.routes, open_ended.routes)), True)
+print(f"    closed {[round(r['totals']['minutes'], 1) for r in closed.routes]}"
+      f" vs open {[round(r['totals']['minutes'], 1) for r in open_ended.routes]}")
+
+section("K1 opting out behaves exactly as before")
+check("no return leg is appended",
+      [r["stop_order"][-1] for r in open_ended.routes],
+      [f"day{r['day']}.dinner" for r in open_ended.routes])
+check("and the stops themselves are unchanged",
+      [i["venue_id"] for i in open_ended.itinerary],
+      [i["venue_id"] for i in closed.itinerary])
+
+section("K1 the critic may name the return, but no agent may re-plan it")
+check("day{N}.return is a legal scope", is_valid_slot("day2.return", days=2), True)
+check("but it is never a revisable slot", "day2.return" in slot_ids(2), False)
+check("so it cannot appear as a revision target",
+      [i["slot"] for i in closed.critic.get("issues", [])
+       if i["slot"].endswith(".return") and i["slot"] in slot_ids(2)], [])
+check("a return beyond the trip length is still rejected",
+      is_valid_slot("day9.return", days=2), False)
+
+section("K2 every map leg carries mode, distance and time")
+rows = ui.map_path_rows(closed.routes)
+check_that("there is a row per leg, not one merged line per day",
+           len(rows) == sum(len(r.get("legs") or []) for r in closed.routes),
+           f"{len(rows)} rows")
+missing = [key for key in ("mode", "km", "minutes")
+           if any(row.get(key) is None for row in rows)]
+check("no row is missing mode, km or minutes", missing, [])
+check_that("each row draws a real decoded path",
+           all(len(row["path"]) >= 2 for row in rows))
+check_that("the hover text says how you are getting there",
+           all(row["mode"] in row["kind"] and "min" in row["detail"]
+               for row in rows), f"{rows[0]['kind']} / {rows[0]['detail']}")
+check("hiding a day hides its legs",
+      {row["day"] for row in ui.map_path_rows(closed.routes, visible_days=[1])},
+      {1})
 
 section("determinism: tier_diff stays meaningful")
 a, b = run_tier2(dict(S1)), run_tier2(dict(S1))

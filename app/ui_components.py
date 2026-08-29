@@ -411,6 +411,45 @@ def render_day_tabs(itinerary: list[dict], routes: list[dict],
 
 
 # ------------------------------------------------------------------- map
+def map_path_rows(routes: list[dict],
+                  visible_days: list[int] | None = None) -> list[dict]:
+    """One row PER LEG, not one merged line per day.
+
+    The travel figures were always computed - mode, distance, duration, and
+    which backend produced them - and were only ever visible in a table. A
+    merged polyline has nothing to attach them to; a leg does, so hovering a
+    segment answers "how am I getting there, how far, how long". mode/km/minutes
+    are carried raw as well as formatted, so a test can assert them.
+    """
+    shown = set(visible_days) if visible_days else None
+    rows = []
+    for index, route in enumerate(routes):
+        day = route.get("day")
+        if shown is not None and day not in shown:
+            continue
+        colour = DAY_COLORS[index % len(DAY_COLORS)]
+        mode = str(route.get("mode") or "").upper()
+        for leg in route.get("legs", []):
+            if not leg.get("polyline"):
+                continue
+            minutes = leg.get("minutes")
+            leg_mode = str(leg.get("mode") or mode or "travel").upper()
+            rows.append({
+                "day": day,
+                "path": decode_polyline(leg["polyline"]),
+                "color": colour,
+                "mode": leg_mode,
+                "km": leg.get("km"),
+                "minutes": minutes,
+                "name": f"{leg.get('from')} → {leg.get('to')}",
+                "kind": f"Day {day} · {leg_mode}",
+                "detail": (f"{minutes:.0f} min · {leg.get('km')} km · "
+                           f"{leg.get('source') or 'unknown'}"
+                           if minutes is not None else "no estimate"),
+            })
+    return rows
+
+
 def render_map(itinerary: list[dict], routes: list[dict],
                visible_days: list[int] | None = None) -> None:
     shown = set(visible_days) if visible_days else None
@@ -432,7 +471,6 @@ def render_map(itinerary: list[dict], routes: list[dict],
         })
 
     origin_points = []
-    path_rows = []
     for index, route in enumerate(routes):
         day = route.get("day")
         if shown is not None and day not in shown:
@@ -443,15 +481,7 @@ def render_map(itinerary: list[dict], routes: list[dict],
                 "lat": origin["lat"], "lon": origin["lon"],
                 "name": origin.get("name") or "Start", "kind": "origin",
                 "detail": f"day {day} start", "radius": 150, "color": ORIGIN_COLOR})
-        path = []
-        for leg in route.get("legs", []):
-            if not leg.get("polyline"):
-                continue
-            decoded = decode_polyline(leg["polyline"])
-            path.extend(decoded if not path else decoded[1:])
-        if path:
-            path_rows.append({"day": day, "path": path,
-                              "color": DAY_COLORS[index % len(DAY_COLORS)]})
+    path_rows = map_path_rows(routes, visible_days)
 
     all_points = points + origin_points
     if not all_points:
@@ -463,8 +493,13 @@ def render_map(itinerary: list[dict], routes: list[dict],
         layers.append(pdk.Layer("PathLayer", data=path_rows, get_path="path",
                                 get_color="color", width_min_pixels=3, pickable=True))
     layers.append(pdk.Layer(
+        # The radius is in METRES, so a compact one-day trip zoomed the markers
+        # up until they covered the routes underneath - and with them the
+        # per-leg hover. Capped in screen pixels so a dot stays a dot at any
+        # zoom and the legs stay reachable.
         "ScatterplotLayer", data=all_points, get_position="[lon, lat]",
-        get_radius="radius", get_fill_color="color", pickable=True,
+        get_radius="radius", radius_min_pixels=5, radius_max_pixels=13,
+        get_fill_color="color", pickable=True,
         stroked=True, get_line_color=[255, 255, 255], line_width_min_pixels=2))
 
     frame = pd.DataFrame(all_points)
@@ -477,7 +512,7 @@ def render_map(itinerary: list[dict], routes: list[dict],
                  tooltip={"text": "{name}\n{kind}\n{detail}"}),
         width="stretch")
     st.caption(f"{len(points)} stops · {len(origin_points)} start points · "
-               f"{len(path_rows)} day routes")
+               f"{len(path_rows)} legs — hover one for mode, distance and time")
 
 
 # ----------------------------------------------------------- panels

@@ -30,6 +30,8 @@ SUITES = [
     ("facts", "eval/verify_facts.py", True),
     ("feasibility", "eval/verify_feasibility.py", True),
     ("panel", "eval/verify_panel.py", True),
+    ("attractions", "eval/verify_attractions.py", True),
+    ("fields", "eval/verify_fields.py", False),
     ("intent", "eval/verify_intent.py", True),
     ("conversation", "eval/verify_conversation.py", True),
     ("demo", "eval/verify_demo.py", True),

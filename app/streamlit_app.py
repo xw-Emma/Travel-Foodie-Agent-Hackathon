@@ -123,6 +123,12 @@ def _apply_draft(draft: dict) -> None:
               "transport_mode": "f_transport", "min_rating": "f_min_rating",
               "min_reviews": "f_min_reviews", "search_radius_km": "f_radius",
               "max_leg_minutes": "f_max_leg", "days": "f_days",
+              # Phase J: the three that used to be understood and then dropped
+              # on the floor. attraction_types is the CN Tower fix - saying
+              # "I like museums" has to reach the search that runs.
+              "attraction_types": "f_attraction_types",
+              "attractions_per_day": "f_attractions_per_day",
+              "family_friendly": "f_family", "return_to_origin": "f_return",
               # The starting point the conversation asked for has to land in
               # the field the Route Agent reads, or answering the question
               # changes nothing.
@@ -132,6 +138,8 @@ def _apply_draft(draft: dict) -> None:
             st.session_state[key] = fields[field]
     if fields.get("allergies"):
         st.session_state["f_no_allergies"] = False
+    # The count is authoritative; the old bool only decides the Food only gate
+    # when no count came through. intent.validate keeps the two consistent.
     if "attractions_wanted" in fields:
         st.session_state["f_food_only"] = not fields["attractions_wanted"]
     if fields.get("start_date"):
@@ -256,8 +264,26 @@ render_chat(backend)
 # widget interaction. Without it, dragging a slider fires a fresh round of
 # Places and Routes calls; the response cache absorbs repeats but not the first
 # variation of each. Only the submit button triggers a run.
-with st.expander("Fine-tune the details",
-                 expanded="intent_draft" not in st.session_state):
+with st.expander("Fine-tune the details", expanded=True):
+  # These two gate fields INSIDE the form, so they have to live outside it.
+  # A form does not rerun on interaction, which means a `disabled=` depending on
+  # a checkbox in the same form keeps the previous render's value until submit -
+  # the control looks inert. Out here, ticking one reruns immediately.
+  gate_left, gate_right = st.columns(2)
+  with gate_left:
+      food_only = st.checkbox(
+          "Food only — no attractions", value=False, key="f_food_only",
+          help="Plans meals and the routes between them, nothing else.")
+  with gate_right:
+      # A checkbox rather than a "none" entry in the list: "none" alongside
+      # "peanut" would be a state with no sensible meaning.
+      no_allergies = st.checkbox("No allergies", value=True,
+                                 key="f_no_allergies")
+      family_friendly = st.checkbox(
+          "Travelling with kids", value=False, key="f_family",
+          help="Drops places Google marks as not good for children. A place "
+               "with no answer is kept - unknown is not a reason to exclude, "
+               "and not a promise either.")
   with st.form("trip_form"):
       left, right = st.columns(2)
       with left:
@@ -292,22 +318,16 @@ with st.expander("Fine-tune the details",
           cuisines = st.multiselect("Restaurant types",
                                     _cuisine_options(backend),
                                     default=["international"], key="f_cuisines")
-          food_only = st.checkbox(
-              "Food only — no attractions", value=False, key="f_food_only",
-              help="Plans meals and the routes between them, nothing else.")
           attraction_types = st.multiselect(
               "Attraction types", vocabulary.attraction_types(),
               disabled=food_only, key="f_attraction_types",
               help="Leave empty for any kind." if not food_only else
                    "Disabled while Food only is on.")
-          # A checkbox rather than a "none" entry in the list: "none" alongside
-          # "peanut" would be a state with no sensible meaning.
-          no_allergies = st.checkbox("No allergies", value=True, key="f_no_allergies")
           allergies = st.multiselect(
               "Allergies (hard exclusion)", vocabulary.CANONICAL_ALLERGENS,
               disabled=no_allergies, key="f_allergies",
-              help="Uncheck 'No allergies' to pick from the nine the dataset "
-                   "flags explicitly.")
+              help="Uncheck 'No allergies' above to pick from the nine the "
+                   "dataset flags explicitly.")
 
       with st.expander("How far will you go?"):
           far_left, far_right = st.columns(2)
@@ -324,11 +344,23 @@ with st.expander("Fine-tune the details",
                   help="0 = no minimum.")
               days_fallback = st.number_input(
                   "Days (used when no dates are picked)", 1, 7, 2, key="f_days")
+              attractions_per_day = st.number_input(
+                  "Attractions per day", 0, 3, 1, key="f_attractions_per_day",
+                  disabled=food_only,
+                  help="2 gives you one before lunch and one before dinner.")
+              return_to_origin = st.checkbox(
+                  "Return to the starting point each day", value=True,
+                  key="f_return",
+                  help="Adds the trip home, and counts it toward the daily "
+                       "travel limit.")
           with far_right:
               max_leg = st.slider("Max travel between stops (min)", 5, 90, 25, 5,
                                   key="f_max_leg")
-              max_daily = st.slider("Max total travel per day (min)", 30, 300, 120, 15,
-                                    key="f_max_daily")
+              max_daily_hours = st.slider(
+                  "Max total travel per day (hours)", 0.5, 5.0, 2.0, 0.5,
+                  key="f_max_daily_hours",
+                  help="Converted to minutes for the planner. The per-leg limit "
+                       "stays in minutes - hours would read badly there.")
 
       submitted = st.form_submit_button("Plan my trip", type="primary")
 
@@ -367,13 +399,15 @@ if submitted:
                     meals=meals or list(vocabulary.MEAL_SLOTS),
                     cuisines=cuisines or ["international"],
                     attraction_types=[] if food_only else attraction_types,
-                    attractions_per_day=0 if food_only else 1,
+                    attractions_per_day=0 if food_only else int(attractions_per_day),
+                    family_friendly=family_friendly,
+                    return_to_origin=return_to_origin,
                     allergies=[] if no_allergies else allergies,
                     search_radius_km=float(search_radius),
                     min_rating=min_rating or None,
                     min_reviews=int(min_reviews) or None,
                     max_leg_minutes=float(max_leg),
-                    max_daily_travel_minutes=float(max_daily),
+                    max_daily_travel_minutes=float(max_daily_hours) * 60.0,
                     transport_mode=transport, tier=int(tier),
                     data_backend=backend)
                 request = trip.to_request_dict()

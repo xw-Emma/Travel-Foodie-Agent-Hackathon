@@ -10,6 +10,7 @@ DATA MODE: FOODIE_DATA_BACKEND=auto|live|local (see src/config.py).
 from __future__ import annotations
 
 import asyncio
+import itertools
 import json
 import time
 import urllib.error
@@ -601,35 +602,59 @@ def _attraction_limit(days: int, attractions_per_day: int = 1) -> int:
 
 
 async def _execute_attractions_tier2(
-    request: dict, days: int, category: str | None = None,
-    attractions_per_day: int = 1,
+    request: dict, days: int, attractions_per_day: int = 1,
 ) -> tuple[dict[str, dict], list[tuple[str, Exception]]]:
+    """Fill day{N}.attraction1..M, honouring the categories that were asked for.
+
+    Two things this used to get wrong. It searched once PER DAY with an
+    identical query, and it built exactly one slot per day - so
+    attractions_per_day above 1 was unreachable and "one in the morning, another
+    in the afternoon" could not be planned. And it never passed a category, so
+    every search was the literal "tourist attraction in <city>"; asking for a
+    museum in Toronto returned the CN Tower rather than the ROM.
+    """
     if attractions_per_day <= 0:
         return {}, []   # food-only trip
+    categories = [str(c).strip() for c in (request.get("attraction_types") or [])
+                  if str(c).strip()] or [None]
     limit = _attraction_limit(days, attractions_per_day)
     trip_anchor, trip_radius = _search_area(request)
+    family = bool(request.get("family_friendly"))
+    # One search per CATEGORY, not per day: the per-day searches were identical
+    # queries billed several times over.
     results = await asyncio.gather(
         *(asyncio.to_thread(search_attractions, request["city"], category, limit,
-                            trip_anchor, trip_radius)
-          for _ in range(days)),
+                            trip_anchor, trip_radius, family)
+          for category in categories),
         return_exceptions=True,
     )
+    failures: list[tuple[str, Exception]] = []
+    per_category: list[list[dict]] = []
+    for category, result in zip(categories, results):
+        if isinstance(result, Exception):
+            failures.append((f"attractions[{category or 'any'}]", result))
+        else:
+            per_category.append(result or [])
+
+    # Interleaved so several requested types are all represented; taking the
+    # first list whole would make "museum or park" mean "museum".
+    pool: list[dict] = []
+    for row in itertools.zip_longest(*per_category):
+        pool.extend(item for item in row if item is not None)
+
     selected: dict[str, dict] = {}
     used: set[str] = set()
-    failures: list[tuple[str, Exception]] = []
-    for day, result in enumerate(results, 1):
-        slot = f"day{day}.attraction1"
-        if isinstance(result, Exception):
-            failures.append((slot, result))
-            continue
-        # Museums close on Mondays too - the dataset has a fixture for exactly
-        # that (a002), so attractions get the same opening-hours filter as meals.
-        open_now = _drop_closed(result or [], _slot_opening(request, slot))
-        attraction = next((item for item in open_now
-                           if item["venue_id"] not in used), None)
-        if attraction:
-            selected[slot] = attraction
-            used.add(attraction["venue_id"])
+    for day in range(1, days + 1):
+        for index in range(1, attractions_per_day + 1):
+            slot = f"day{day}.attraction{index}"
+            # Museums close on Mondays too - the dataset has a fixture for
+            # exactly that (a002), so attractions get the same hours filter.
+            open_now = _drop_closed(pool, _slot_opening(request, slot))
+            attraction = next((item for item in open_now
+                               if item["venue_id"] not in used), None)
+            if attraction:
+                selected[slot] = attraction
+                used.add(attraction["venue_id"])
     return selected, failures
 
 
@@ -690,11 +715,20 @@ async def _compute_routes_async(items: list[dict], request: dict) -> list[dict]:
     days = int(request.get("days", 2))
     mode = str(request.get("transport_mode", "WALK")).lower()
     optimize = bool(request.get("optimize_route", True))
+    # A day that starts at a named place should be able to end there. Arriving
+    # by train and not going home again is the unusual case, so this defaults on
+    # whenever an origin resolved - and the return leg COUNTS towards the daily
+    # travel limit, because getting home is travel.
+    close_loop = bool(request.get("return_to_origin", True))
     day_stops = []
     for day in range(1, days + 1):
         stops = _sort_day_stops([item for item in items
                                  if item.get("slot", "").startswith(f"day{day}.")])
-        day_stops.append((day, _resolved_origin(request, day), stops))
+        origin = _resolved_origin(request, day)
+        if close_loop and origin and stops:
+            stops = stops + [{**origin, "slot": f"day{day}.return",
+                              "name": f"back to {origin.get('name') or 'the start'}"}]
+        day_stops.append((day, origin, stops))
 
     results = await asyncio.gather(
         *(asyncio.to_thread(_route_one_day, origin, stops, mode, optimize)
@@ -1370,13 +1404,19 @@ async def _run_tier2_async(request: dict) -> TripState:
     attractions_per_day = _attractions_per_day(request)
     attractions, attraction_failures = await _execute_attractions_tier2(
         request, days, attractions_per_day=attractions_per_day)
-    for day in range(1, days + 1) if attractions_per_day else ():
-        slot = f"day{day}.attraction1"
+    attraction_slots = [f"day{day}.attraction{index}"
+                        for day in range(1, days + 1)
+                        for index in range(1, attractions_per_day + 1)]
+    for slot in attraction_slots:
         attraction = attractions.get(slot)
         # Was limit=2, which both days consumed - leaving attractions with no
-        # runners-up at all while every meal slot had a dozen.
+        # runners-up at all while every meal slot had a dozen. The category is
+        # passed here too, so the runners-up are the same kind of place.
         st.candidates[slot] = search_attractions(
-            request["city"], limit=_attraction_limit(days, attractions_per_day)
+            request["city"],
+            (request.get("attraction_types") or [None])[0],
+            _attraction_limit(days, attractions_per_day),
+            family_friendly=bool(request.get("family_friendly")),
         ) if attraction else []
         if attraction:
             st.itinerary.append({"slot": slot, "venue_id": attraction["venue_id"], "name": attraction["name"],
@@ -1467,9 +1507,11 @@ async def _run_tier2_async(request: dict) -> TripState:
             radius = _within_km(
                 leg_minutes, str(request.get("transport_mode", "WALK")).lower())
             replacement_results = await asyncio.gather(
-                *(asyncio.to_thread(search_attractions, request["city"], None,
+                *(asyncio.to_thread(search_attractions, request["city"],
+                                    (request.get("attraction_types") or [None])[0],
                                     attraction_limit, anchors.get(slot),
-                                    radius if anchors.get(slot) else None)
+                                    radius if anchors.get(slot) else None,
+                                    bool(request.get("family_friendly")))
                   for slot in attraction_slots),
                 return_exceptions=True,
             )

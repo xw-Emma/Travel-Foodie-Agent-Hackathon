@@ -27,7 +27,7 @@ from . import intent
 # question that is not here cannot be asked, so the conversation cannot wander
 # into territory the planner has no field for.
 QUESTION_IDS = ("describe", "city", "city_is_country", "origin", "budget_basis",
-                "dates", "infeasible")
+                "dates", "infeasible", "kids")
 
 # At most this many per turn. A form disguised as an interrogation is worse than
 # a form.
@@ -106,6 +106,19 @@ def missing_information(fields: dict, feasibility: dict | None = None,
             "dates", "Which dates? It lets me check that each place is actually "
             "open when you would arrive.",
             "opening hours cannot be checked without a weekday", "start_date"))
+
+    # Only worth asking when the party is big enough for children to be
+    # plausible - "any kids?" to a solo traveller is a silly question, and the
+    # answer only changes anything because Places actually carries the field.
+    if (fields.get("family_friendly") is None
+            and (fields.get("party_size") or 0) >= 3
+            and "kids" not in asked):
+        questions.append(_question(
+            "kids", "Any children in the party? I can drop places Google marks "
+            "as not good for children — though most places say nothing either "
+            "way, so I can only exclude, not promise.",
+            "a real Places field, but only present on some venues",
+            "family_friendly"))
 
     return questions[:MAX_QUESTIONS_PER_TURN]
 

@@ -23,6 +23,13 @@ from ..polyline import encode_polyline
 MODE_SPEED_KMH = {"walk": 4.5, "bicycle": 15.0, "transit": 18.0, "drive": 25.0}
 
 
+def _tri_state(value) -> bool | None:
+    """None stays None. bool() would turn "nobody recorded it" into "no", which
+    is the same fabrication the live backend used to make in the other
+    direction by hardcoding True."""
+    return None if value is None else bool(value)
+
+
 def _speed_kmh(mode: str) -> float:
     return MODE_SPEED_KMH.get((mode or "walk").lower(), MODE_SPEED_KMH["walk"])
 
@@ -60,7 +67,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                        near: tuple[float, float] | None = None,
                        within_km: float | None = None,
                        min_rating: float | None = None,
-                       min_reviews: int | None = None) -> list[dict]:
+                       min_reviews: int | None = None,
+                       family_friendly: bool = False) -> list[dict]:
     """
     Ranked by rating. `exclude_flags` (e.g. ["peanut_risk"]) drops flagged
     venues IN CODE - the allergen hard constraint is physically enforced at
@@ -88,6 +96,10 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
     if min_reviews is not None:
         q += " AND review_count >= ?"
         params.append(int(min_reviews))
+    if family_friendly:
+        # Unknown does not exclude, matching the live rule: only a
+        # recorded "not suitable" is a reason to drop a venue.
+        q += " AND (kid_friendly IS NULL OR kid_friendly = 1)"
     q += " ORDER BY rating DESC, review_count DESC LIMIT ?"
     # An anchored search re-ranks by distance afterwards, so it needs the whole
     # eligible pool rather than the top slice by rating.
@@ -115,7 +127,7 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
             "price_level": r["price_level"], "avg_meal_cost": r["avg_meal_cost"],
             "rating": r["rating"], "review_count": r["review_count"],
             "area": r.get("area"), "lat": r["lat"], "lon": r["lon"],
-            "dietary_flags": flags, "kid_friendly": bool(r.get("kid_friendly")),
+            "dietary_flags": flags, "kid_friendly": _tri_state(r.get("kid_friendly")),
             "source": "local_dataset",
         }
         if near is not None:
@@ -156,12 +168,17 @@ def get_venue_details(venue_id: str) -> dict:
 def search_attractions(city: str, category: str | None = None,
                        limit: int = 5,
                        near: tuple[float, float] | None = None,
-                       within_km: float | None = None) -> list[dict]:
+                       within_km: float | None = None,
+                       family_friendly: bool = False) -> list[dict]:
     q = "SELECT * FROM attractions WHERE lower(city) = lower(?)"
     params: list = [city]
     if category:
         q += " AND lower(category) = lower(?)"
         params.append(category)
+    if family_friendly:
+        # Unknown does not exclude, matching the live rule: only a
+        # recorded "not suitable" is a reason to drop a venue.
+        q += " AND (kid_friendly IS NULL OR kid_friendly = 1)"
     q += " ORDER BY rating DESC LIMIT ?"
     params.append(10000 if near is not None else limit)
     con = _conn()
@@ -171,7 +188,8 @@ def search_attractions(city: str, category: str | None = None,
         "venue_id": r["venue_id"], "name": r["name"], "category": r["category"],
         "cost": r["cost"], "rating": r["rating"],
         "visit_duration_min": r["visit_duration_min"],
-        "lat": r["lat"], "lon": r["lon"], "kid_friendly": bool(r["kid_friendly"]),
+        "lat": r["lat"], "lon": r["lon"],
+        "kid_friendly": _tri_state(r["kid_friendly"]),
         "source": "local_dataset",
     } for r in rows]
     if near is not None:
@@ -225,6 +243,14 @@ def compute_day_route(origin: dict, stops: list[dict], mode: str = "WALK",
     else:
         anchor, movable, leading = points[0], list(points[1:]), [points[0]]
 
+    # The last stop is the destination and is never reordered - which is how
+    # routes_live behaves (Google only permutes `intermediates`). Without this
+    # the two backends disagreed, and a "back to where you started" stop would
+    # be picked FIRST offline because it sits nearest the origin.
+    trailing: list[dict] = []
+    if movable:
+        trailing = [movable.pop()]
+
     if optimize and movable:
         remaining = list(movable)
         current = anchor
@@ -239,7 +265,7 @@ def compute_day_route(origin: dict, stops: list[dict], mode: str = "WALK",
     else:
         ordered = list(movable)
 
-    ordered = leading + ordered
+    ordered = leading + ordered + trailing
     sequence = ([origin] + ordered) if origin and origin.get("lat") is not None else ordered
     legs = []
     for source, target in zip(sequence, sequence[1:]):

@@ -40,6 +40,9 @@ def day_scopes(days: int = 2) -> list[str]:
     for d in range(1, days + 1):
         scopes.append(f"day{d}")
         scopes.append(f"day{d}.origin")
+        # The trip back to where the day started. Like origin it is a place, not
+        # a choice, so the Critic may name it but no agent may re-plan it.
+        scopes.append(f"day{d}.return")
     return scopes
 
 

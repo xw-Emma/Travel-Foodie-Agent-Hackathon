@@ -49,6 +49,13 @@ class TripRequest(BaseModel):
     # no threshold, so every caller predating this is unaffected.
     min_rating: float | None = Field(default=None, ge=0, le=5)
     min_reviews: int | None = Field(default=None, ge=0)
+    # Drops venues Google or the dataset marks as NOT good for children. A venue
+    # with no answer is kept: unknown is not grounds to exclude, and not grounds
+    # to promise either.
+    family_friendly: bool = False
+    # True whenever an origin is resolved: arriving somewhere by train and not
+    # going home again is the unusual case, not the usual one.
+    return_to_origin: bool = True
 
     cuisines: list[str] = Field(default_factory=lambda: ["international"])
     attraction_types: list[str] = Field(default_factory=list)

@@ -33,6 +33,8 @@ ALLOWED_FIELDS = {
     "party_size", "cuisines", "allergies", "attractions_wanted",
     "transport_mode", "min_rating", "min_reviews", "search_radius_km",
     "max_leg_minutes", "other_criteria", "origin_text",
+    "attractions_per_day", "attraction_types", "family_friendly",
+    "return_to_origin",
 }
 
 # Keys that would mean the model tried to choose for us. Called out by name in
@@ -59,6 +61,8 @@ def _schema_prompt(backend: str) -> str:
         ' "meals": [str], "budget_amount": number|null,\n'
         ' "budget_basis": "total"|"per_person"|null, "party_size": int|null,\n'
         ' "cuisines": [str], "allergies": [str], "attractions_wanted": bool|null,\n'
+        ' "attractions_per_day": int|null, "attraction_types": [str],\n'
+        ' "family_friendly": bool|null, "return_to_origin": bool|null,\n'
         ' "transport_mode": str|null, "min_rating": number|null,\n'
         ' "min_reviews": int|null, "search_radius_km": number|null,\n'
         ' "max_leg_minutes": number|null, "origin_text": str|null,\n'
@@ -72,6 +76,12 @@ def _schema_prompt(backend: str) -> str:
         "qualifier you cannot capture there ('authentic', 'where locals eat') "
         "goes to other_criteria, but the cuisine itself belongs in the field.\n"
         "city must be a CITY, never a country or region.\n"
+        f"attraction_types must come from {vocabulary.attraction_types()}.\n"
+        "attractions_per_day is a COUNT: 'somewhere in the morning and "
+        "somewhere else in the afternoon' is 2, not a yes/no.\n"
+        "family_friendly only when children are actually mentioned.\n"
+        "return_to_origin when they say they end where they started - "
+        "'I'll take the train home' is one.\n"
         "origin_text is where the traveller STARTS - a hotel, address or "
         "landmark they named. It is never a restaurant and never somewhere to "
         "eat; leave it null unless they said where they are staying or setting "
@@ -204,8 +214,34 @@ def validate(raw: dict, backend: str = "auto") -> dict:
             rejected.append({"field": "start_date", "value": start,
                              "reason": "not a YYYY-MM-DD date"})
 
+    # attractions_wanted is the pre-Phase-J boolean, kept as a deprecated alias
+    # so existing callers keep working. An explicit count always wins over it:
+    # "one in the morning, another in the afternoon" is 2, and a bool cannot
+    # say that.
     if isinstance(raw.get("attractions_wanted"), bool):
         fields["attractions_wanted"] = raw["attractions_wanted"]
+        fields["attractions_per_day"] = 1 if raw["attractions_wanted"] else 0
+    if raw.get("attractions_per_day") is not None:
+        count = _number(raw["attractions_per_day"], 0, 3)
+        if count is None:
+            rejected.append({"field": "attractions_per_day",
+                             "value": str(raw["attractions_per_day"])[:40],
+                             "reason": "outside the accepted range 0-3"})
+        else:
+            fields["attractions_per_day"] = int(count)
+            fields["attractions_wanted"] = int(count) > 0
+
+    kinds, bad = _clean_list(raw.get("attraction_types"),
+                             vocabulary.attraction_types())
+    if kinds:
+        fields["attraction_types"] = kinds
+    rejected += [{"field": "attraction_types", "value": value,
+                  "reason": "not a category the dataset or search offers"}
+                 for value in bad]
+
+    for flag in ("family_friendly", "return_to_origin"):
+        if isinstance(raw.get(flag), bool):
+            fields[flag] = raw[flag]
 
     # A free-text starting point. Deliberately NOT geocoded here: resolve_origin
     # does that at plan time through the Places client, so this stays a plain

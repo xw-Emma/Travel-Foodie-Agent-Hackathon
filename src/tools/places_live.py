@@ -204,7 +204,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
                        near: tuple[float, float] | None = None,
                        within_km: float | None = None,
                        min_rating: float | None = None,
-                       min_reviews: int | None = None) -> list[dict]:
+                       min_reviews: int | None = None,
+                       family_friendly: bool = False) -> list[dict]:
     bits = ["restaurant", meal]
     if cuisine:
         bits.insert(0, cuisine)
@@ -217,7 +218,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
         "places.id", "places.displayName", "places.formattedAddress",
         "places.location", "places.rating", "places.userRatingCount",
         "places.priceLevel", "places.types", "places.primaryType",
-        "places.addressComponents",
+        "places.addressComponents", "places.goodForChildren",
+        "places.menuForChildren",
     ])
     data = _post(f"{config.PLACES_BASE_URL}/places:searchText",
                  {"textQuery": text_query, "maxResultCount": max(limit * 2, 8),
@@ -243,6 +245,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
             continue
         if min_reviews is not None and reviews < int(min_reviews):
             continue
+        if family_friendly and p.get("goodForChildren") is False:
+            continue
         loc = p.get("location") or {}
         name = (p.get("displayName") or {}).get("text") or "Unknown"
         out.append({
@@ -259,6 +263,8 @@ def search_restaurants(city: str, meal: str, area: str | None = None,
             "lat": loc.get("latitude"),
             "lon": loc.get("longitude"),
             "dietary_flags": flags,
+            "kid_friendly": p.get("goodForChildren"),
+            "childrens_menu": p.get("menuForChildren"),
             "verify_with_restaurant": True,  # live allergen uncertainty
             "source": "google_places",
         })
@@ -330,12 +336,13 @@ def get_venue_details(venue_id: str) -> dict:
 def search_attractions(city: str, category: str | None = None,
                        limit: int = 5,
                        near: tuple[float, float] | None = None,
-                       within_km: float | None = None) -> list[dict]:
+                       within_km: float | None = None,
+                       family_friendly: bool = False) -> list[dict]:
     q = f"{category or 'tourist attraction'} in {city}"
     field_mask = ",".join([
         "places.id", "places.displayName", "places.formattedAddress",
         "places.location", "places.rating", "places.userRatingCount",
-        "places.primaryType",
+        "places.primaryType", "places.goodForChildren",
     ])
     data = _post(f"{config.PLACES_BASE_URL}/places:searchText",
                  {"textQuery": q, "maxResultCount": limit,
@@ -352,7 +359,13 @@ def search_attractions(city: str, category: str | None = None,
             "rating": p.get("rating") or 0.0,
             "visit_duration_min": 60,
             "lat": loc.get("latitude"), "lon": loc.get("longitude"),
-            "kid_friendly": True,
+            # Was a hardcoded True on every row - an unchecked claim about a
+            # real place, which is the same category of error as inventing the
+            # place. None means Google did not say, and must render as unknown.
+            "kid_friendly": p.get("goodForChildren"),
             "source": "google_places",
         })
+        # Only a definite "no" excludes. None means Google did not say.
+        if family_friendly and out[-1]["kid_friendly"] is False:
+            out.pop()
     return _within_radius(out, near, within_km)[:limit]
