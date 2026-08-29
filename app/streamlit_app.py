@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app import ui_components as ui  # noqa: E402
-from src import config, diagnostics, vocabulary  # noqa: E402
+from src import config, diagnostics, verification, vocabulary  # noqa: E402
 from src.orchestrator import run_tier1, run_tier2  # noqa: E402
 from src.request_model import Origin, TripRequest  # noqa: E402
 from src.tools import classify_city, resolve_origin  # noqa: E402
@@ -48,12 +48,22 @@ def render_result(state: dict) -> None:
     ui.render_banners(meta, request, budget)
     ui.render_budget(budget, request)
 
+    # Verification first: what was asked for, and how each answer was reached,
+    # before the plan that claims to satisfy it.
+    st.subheader("Verification")
+    ui.render_verification_panel(verification.verify(request, state))
+
+    if meta.get("day_summary"):
+        st.subheader("At a glance")
+        ui.render_day_summary(meta["day_summary"])
+
     st.subheader("Itinerary")
     ui.render_day_tabs(state.get("itinerary") or [], state.get("routes") or [],
                        day_labels=state.get("day_labels"),
                        max_daily_minutes=float(
                            request.get("max_daily_travel_minutes") or 120.0),
-                       enrichment=meta.get("enrichment"))
+                       enrichment=meta.get("enrichment"),
+                       backups=meta.get("backups"))
 
     st.subheader("Map")
     routes = state.get("routes") or []

@@ -28,6 +28,7 @@ SUITES = [
     ("inputs", "eval/verify_inputs.py", True),
     ("routing", "eval/verify_routing.py", True),
     ("facts", "eval/verify_facts.py", True),
+    ("panel", "eval/verify_panel.py", True),
     ("demo", "eval/verify_demo.py", True),
     ("acceptance-local", "eval/acceptance.py", False),
 ]

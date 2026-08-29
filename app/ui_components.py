@@ -126,7 +126,118 @@ def render_budget(budget: dict, request: dict | None = None) -> None:
 
 
 # --------------------------------------------------------------- day tabs
-def render_venue_detail(entry: dict) -> None:
+STATE_ICONS = {
+    "verified": ("✅", "Verified against data"),
+    "inferred": ("⚠️", "Met by inference, not verified"),
+    "failed": ("❌", "Not met"),
+    "unverifiable": ("🚫", "No data source exists to check this"),
+    "not_requested": ("–", "Not requested"),
+}
+
+
+def render_verification_panel(report: dict) -> None:
+    """Every stated requirement, and how each answer was actually arrived at.
+
+    The four states matter more than the table. A green tick against live
+    allergen filtering would claim a check that Google's data cannot support,
+    so those read as inferred with the caveat attached; Michelin sits
+    permanently at unverifiable rather than being quietly dropped, because an
+    omitted requirement looks like a satisfied one.
+    """
+    summary = report.get("summary") or {}
+    requirements = [r for r in (report.get("requirements") or [])
+                    if r.get("state") != "not_requested"]
+    headline = summary.get("headline", "")
+    if summary.get("failed"):
+        st.error(f"**{headline}**", icon=":material/rule:")
+    elif summary.get("unverifiable") or summary.get("inferred"):
+        st.warning(f"**{headline}**", icon=":material/rule:")
+    else:
+        st.success(f"**{headline}**", icon=":material/rule:")
+
+    rows = []
+    for item in requirements:
+        icon, _ = STATE_ICONS.get(item.get("state"), ("?", ""))
+        rows.append({
+            "": icon,
+            "Requirement": item.get("requirement"),
+            "Expected": str(item.get("expected")),
+            "Found": str(item.get("actual")),
+            "Source": str(item.get("source") or "—"),
+            "Checked": str(item.get("fetched_at") or "—"),
+        })
+    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+    # Anything not plainly verified needs its reason spelled out, not buried.
+    for item in requirements:
+        if item.get("state") == "verified" or not item.get("reason"):
+            continue
+        icon, label = STATE_ICONS.get(item.get("state"), ("?", ""))
+        st.caption(f"{icon} **{item.get('requirement')}** — {label.lower()}: "
+                   f"{item['reason']}")
+
+    legend = " · ".join(f"{icon} {label}" for state, (icon, label)
+                        in STATE_ICONS.items() if state != "not_requested")
+    st.caption(legend)
+
+
+def render_day_summary(summary: list[dict]) -> None:
+    """Whole-trip shape at a glance, and which day comes out best."""
+    if not summary:
+        return
+    st.dataframe(pd.DataFrame([{
+        "Day": row["day"], "Stops": row["stops"],
+        "Cost": f"${row['cost']:,.2f}",
+        "Travel": f"{row['travel_minutes']:.0f} min · {row['travel_km']} km",
+        "Avg rating": row["average_rating"] if row["average_rating"] else "—",
+    } for row in summary]), width="stretch", hide_index=True)
+    if len(summary) > 1:
+        # Best = highest average rating, least travel as the tie-break.
+        best = max(summary, key=lambda row: (row["average_rating"] or 0,
+                                             -row["travel_minutes"]))
+        st.success(
+            f"**Best overall day: Day {best['day']}** — {best['stops']} stops, "
+            f"${best['cost']:,.2f}, {best['travel_minutes']:.0f} min of travel"
+            + (f", averaging {best['average_rating']} stars"
+               if best["average_rating"] else ""),
+            icon=":material/star:")
+
+
+def render_backups(entry: dict) -> None:
+    """Runners-up, with the arithmetic that put them second.
+
+    An unexplained ranking is a black box. These carry search-level facts only:
+    fetching details for venues nobody chose would triple the billed calls.
+    """
+    chosen = entry.get("chosen") or {}
+    rows = []
+    for label, option in ([("Chosen", chosen)]
+                          + [("Backup", alt) for alt in entry.get("alternatives") or []]):
+        facts, score = option.get("facts") or {}, option.get("score") or {}
+        travel = score.get("travel_minutes")
+        rows.append({
+            "": label,
+            "Venue": facts.get("name"),
+            "Rating": (f"{facts.get('rating')} ({facts.get('review_count')})"
+                       if facts.get("rating") is not None else "—"),
+            "Cost": f"${float(score.get('cost') or 0):,.2f}",
+            "Travel": (f"{travel:.0f} min" if travel is not None
+                       else "start of day"),
+            "Score": ("over the slot's budget" if not score.get("affordable")
+                      or score.get("total") is None
+                      else f"{score.get('total'):.1f}"),
+        })
+    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+    score = chosen.get("score") or {}
+    st.caption(
+        f"Score = rating x 10 ({score.get('rating_points', 0)}) minus a penalty "
+        f"for travel beyond the limit ({score.get('distance_penalty', 0)}). "
+        f"Anything costing more than the slot's ${score.get('budget_remaining', 0):,.2f} "
+        f"allowance is rejected outright. Chosen from {entry.get('pool_size', 0)} "
+        "verified candidates.")
+
+
+def render_venue_detail(entry: dict, backups: dict | None = None) -> None:
     """One stop, with verifiable facts kept visibly apart from model commentary.
 
     The separation is the point. Facts go in a table with their source; anything
@@ -179,6 +290,10 @@ def render_venue_detail(entry: dict) -> None:
     if reservation.get("text"):
         st.markdown(f"**Booking** — {reservation['text']}")
 
+    if backups and backups.get("alternatives"):
+        st.markdown("**Runners-up**")
+        render_backups(backups)
+
     unverifiable = entry.get("unverifiable") or {}
     if unverifiable:
         for claim, reason in unverifiable.items():
@@ -189,7 +304,8 @@ def render_venue_detail(entry: dict) -> None:
 def render_day_tabs(itinerary: list[dict], routes: list[dict],
                     day_labels: list[str] | None = None,
                     max_daily_minutes: float = 120.0,
-                    enrichment: list[dict] | None = None) -> None:
+                    enrichment: list[dict] | None = None,
+                    backups: list[dict] | None = None) -> None:
     """One tab per day: stops in visiting order, travel between them, running cost."""
     days = sorted({_day_of(item.get("slot", "")) for item in itinerary} - {0})
     if not days:
@@ -240,11 +356,13 @@ def render_day_tabs(itinerary: list[dict], routes: list[dict],
                 st.caption(summary)
             detail_by_slot = {entry.get("slot"): entry
                               for entry in (enrichment or [])}
+            backup_by_slot = {entry.get("slot"): entry
+                              for entry in (backups or [])}
             for stop in stops:
                 entry = detail_by_slot.get(stop.get("slot"))
                 if entry:
-                    with st.expander(f"{stop.get('name')} — facts and sources"):
-                        render_venue_detail(entry)
+                    with st.expander(f"{stop.get('name')} — facts, sources and alternatives"):
+                        render_venue_detail(entry, backup_by_slot.get(stop.get("slot")))
                 elif stop.get("why"):
                     st.caption(f"**{stop.get('name')}** — {stop['why']}")
 

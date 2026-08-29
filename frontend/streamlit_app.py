@@ -23,7 +23,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app import ui_components as ui  # noqa: E402
-from src import vocabulary  # noqa: E402
+from src import verification, vocabulary  # noqa: E402
 
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8080").rstrip("/")
 # For --no-allow-unauthenticated backends, set USE_ID_TOKEN=1 and run where gcloud works,
@@ -201,12 +201,20 @@ if "last_state" in st.session_state:
     meta = state["meta"]
     ui.render_banners(meta, state["request"], state["budget"])
     ui.render_budget(state["budget"], state["request"])
+    # verification.verify is a pure function over plain dicts, so the deployed
+    # UI reaches the same verdicts from the JSON response - no extra endpoint.
+    st.subheader("Verification")
+    ui.render_verification_panel(verification.verify(state["request"], state))
+    if meta.get("day_summary"):
+        st.subheader("At a glance")
+        ui.render_day_summary(meta["day_summary"])
     st.subheader("Itinerary")
     ui.render_day_tabs(state["itinerary"], state["routes"],
                        day_labels=state.get("day_labels"),
                        max_daily_minutes=float(
                            state["request"].get("max_daily_travel_minutes") or 120.0),
-                       enrichment=meta.get("enrichment"))
+                       enrichment=meta.get("enrichment"),
+                       backups=meta.get("backups"))
     st.subheader("Map")
     ui.render_map(state["itinerary"], state["routes"])
     with st.expander("Agent trace", expanded=True):

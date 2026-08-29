@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-08-27T11:13:52-04:00",
+  "captured_at": "2026-08-28T22:20:45-04:00",
   "request": {
     "city": "Calgary",
     "days": 2,
@@ -25,7 +25,7 @@
       "lat": 51.043721,
       "lon": -114.0836927,
       "source": "google_places",
-      "why": "Wafflato is the top-rated venue in the results (4.8 \u2b50, 673 reviews), confirmed peanut_risk: false \u2014 safe for your allergy. Its globally-inspired waffle and caf\u00e9 menu aligns well with an international cuisine preference, and it sits at price_level 2, fitting the $20 budget bracket. Note: verify_with_restaurant=true (Google Places source), so it's advisable to confirm current opening hours and menu pricing directly with the restaurant before visiting."
+      "why": "Upgraded using the remaining budget."
     },
     {
       "slot": "day1.lunch",
@@ -35,7 +35,7 @@
       "lat": 51.0428989,
       "lon": -114.0710603,
       "source": "google_places",
-      "why": "Namo Cafe Bistro earns the top spot with the highest rating in the result set (4.8 \u2605 across 1,185 reviews), well above every other returned venue. Its avg_meal_cost of $30 sits comfortably under the $40 per-person budget, and its dietary_flags confirm peanut_risk: false \u2014 making it fully safe for your allergy. Located in downtown Calgary's vibrant Beltline neighbourhood, it offers an eclectic international-leaning caf\u00e9-bistro menu that aligns with the requested cuisine style. Note: source is Google Places and verify_with_restaurant=true, so it is advisable to confirm today's lunch hours directly with the restaurant before visiting."
+      "why": "Highest-rated venue in the search results (4.8 \u2605 across 1,191 reviews), well within the $40 budget at ~$30 avg per person, and confirmed peanut_risk: false \u2014 making it safe for your peanut allergy. Located in Calgary's vibrant Beltline neighbourhood, it offers a diverse international-leaning caf\u00e9-bistro menu ideal for a day-1 lunch. Note: sourced from Google Places with verify_with_restaurant=true, so confirming hours directly with the restaurant before visiting is advised."
     },
     {
       "slot": "day1.attraction1",
@@ -59,13 +59,23 @@
     },
     {
       "slot": "day2.breakfast",
-      "venue_id": "ChIJX-gpm9plcVMRAuKqI9W6G8U",
-      "name": "Komorebi Brunch",
+      "venue_id": "ChIJe95va99vcVMR8U-c0nnsVRc",
+      "name": "Galaxie Diner",
       "cost": 60.0,
-      "lat": 51.0531618,
-      "lon": -114.04629329999999,
+      "lat": 51.0396807,
+      "lon": -114.0892653,
       "source": "google_places",
-      "why": "Komorebi Brunch earns the top rating (4.8) among all returned results and carries no peanut_risk flag, making it fully safe for your allergy. Its international-leaning brunch menu aligns with the cuisine preference, and its price_level 2 fits within the $20 budget context. Note: verify_with_restaurant=true \u2014 it is advisable to confirm current hours and menu details directly with the restaurant before visiting."
+      "why": "Verified replacement"
+    },
+    {
+      "slot": "day2.lunch",
+      "venue_id": "ChIJp16d4KJxcVMRmS4q8r0iIps",
+      "name": "Bar Chouette",
+      "cost": 60.0,
+      "lat": 51.041825599999996,
+      "lon": -114.06793549999999,
+      "source": "google_places",
+      "why": "Verified replacement"
     },
     {
       "slot": "day2.attraction1",
@@ -78,24 +88,14 @@
       "why": "Verified replacement attraction"
     },
     {
-      "slot": "day2.lunch",
-      "venue_id": "ChIJkfUr1PxvcVMRF_ZsT5eSh7s",
-      "name": "Earls Kitchen + Bar",
-      "cost": 60.0,
-      "lat": 51.0455173,
-      "lon": -114.06929710000001,
-      "source": "google_places",
-      "why": "Earls Kitchen + Bar is the top pick for Day 2 lunch in Calgary. It carries the highest review count (5,714) among all peanut-safe results, shares the top rating of 4.7, and has an avg_meal_cost of $30 \u2014 comfortably under the $40 budget. Its menu spans globally inspired dishes (burgers, bowls, tacos, pasta, sushi-grade tuna) that squarely fit the 'international' cuisine preference. dietary_flags confirm peanut_risk: false, so it is safe for the stated allergy. Note: source is Google Places and verify_with_restaurant is true, so it is advisable to confirm current hours and menu details directly with the restaurant before visiting."
-    },
-    {
       "slot": "day2.dinner",
-      "venue_id": "ChIJu9AAFddxcVMRvFxH6Gtd6Aw",
-      "name": "Marko's Kitchen",
-      "cost": 60.0,
-      "lat": 51.0039558,
-      "lon": -114.06184390000001,
+      "venue_id": "ChIJH4fama5vcVMRpiE52zAfBEU",
+      "name": "The Continental Restaurant",
+      "cost": 160.0,
+      "lat": 51.0524013,
+      "lon": -114.0878077,
       "source": "google_places",
-      "why": "Marko's Kitchen earns the top spot with the highest rating in the result set (4.8 \u2b50 from 1,023 reviews), an avg meal cost of ~$30 \u2014 comfortably under the $65/person budget \u2014 and confirmed peanut_risk: false, making it safe for your allergy. Located in Calgary's vibrant Inglewood neighbourhood, it offers a welcoming international dining experience. Note: this venue carries a verify_with_restaurant advisory from the live Google Places source, so it is worth a quick call ahead to confirm current hours and menu availability for Day 2 dinner."
+      "why": "Top-rated venue in the results (4.7 stars, 268 reviews), confirmed peanut_risk: false so it is safe for your allergy. Its French-international cuisine fits the international preference, and while its avg_meal_cost of $80 is slightly above the $65 budget, it is the strongest overall fit from the available options \u2014 guests can manage cost by selecting \u00e0-la-carte items carefully. Note: verify_with_restaurant=true applies, so it is advisable to confirm current menu pricing and peanut protocols directly with the restaurant before visiting."
     }
   ],
   "routes": [
@@ -121,7 +121,7 @@
           "mode": "walk",
           "km": 0.73,
           "minutes": 10.2,
-          "polyline": "gjpvH`ofwTZw]?yAmAI{AI}CMHwNUA",
+          "polyline": "gjpvH`ofwTZw]?yAmAI{AI}CM?G_@ADaGB_A@_C",
           "source": "google_routes",
           "from_slot": "day1.lunch",
           "to_slot": "day1.attraction1",
@@ -161,56 +161,56 @@
       "legs": [
         {
           "mode": "walk",
-          "km": 1.96,
-          "minutes": 26.7,
-          "polyline": "qirvHhtawTAf`@zK?j@AVDdAb@f@ZfCvBn@n@~@oDTiAjBoENIR?z@VR@\\wDZeCHOLEdABDwADIPIdP?NoBHmC@iBiA[EGSiD@i@XkCMSIAGU",
+          "km": 1.71,
+          "minutes": 23.5,
+          "polyline": "suovHz`jwTJmONmRJcF@gDX{Z\\gb@iHAQ_@O{@As@UEIoA?SE?KmAY?O_BByCQ]?u@cAA",
           "source": "google_routes",
           "from_slot": "day2.breakfast",
+          "to_slot": "day2.lunch",
+          "from": "Galaxie Diner",
+          "to": "Bar Chouette"
+        },
+        {
+          "mode": "walk",
+          "km": 2.04,
+          "minutes": 28.2,
+          "polyline": "mbpvHt|ewTwCI?ToAGHiNVsTT_XwIUf@s\\UCDIEu@A}CFgFCKDeAFmFJwBZwEHmC@iBiA[EGSiD@i@XkCMSIAGUDE",
+          "source": "google_routes",
+          "from_slot": "day2.lunch",
           "to_slot": "day2.attraction1",
-          "from": "Komorebi Brunch",
+          "from": "Bar Chouette",
           "to": "The Confluence Historic Site & Parkland"
         },
         {
           "mode": "walk",
-          "km": 1.91,
-          "minutes": 26.9,
-          "polyline": "gspvHnhawTFTH@LR[~C?TRhDDFhAZCbCGrBe@lHGzCArBEdABJIvGBlBDt@EHTBg@r\\Dd@MfNAxEI`GItM_@AWRsCKUrV",
+          "km": 3.82,
+          "minutes": 53.0,
+          "polyline": "aspvHhhawTHGFBD]rBgE_BSQQWe@q@_@y@Ec@@mAJWJSVe@hAUl@UbBYvAKxADNsAlD[pAIn@Qx@w@lCQQw@rC_@xAmBbHILiA|CMR_@|@_@tBGd@GVBHCj@Qp@NLb@x@V`B@~@ErHGjHY?C|CEb@Yx\\Bz@Gf@Wx[UbVGtE@v@QpRC^IlMC\\KpM@\\I~F@j@OnBUzAu@hAqDpEkAtA[^EJ}@XiAHBjK",
           "source": "google_routes",
           "from_slot": "day2.attraction1",
-          "to_slot": "day2.lunch",
-          "from": "The Confluence Historic Site & Parkland",
-          "to": "Earls Kitchen + Bar"
-        },
-        {
-          "mode": "walk",
-          "km": 5.55,
-          "minutes": 77.7,
-          "polyline": "uzpvH~cfwTIhL`PBfA?VCjD@PDlDCjJ@tl@AjPBNBjD?PE|CCf@KxAk@T@hDmAj@k@n@y@\\q@\\kATaB\\eHFe@La@jA{AtCgDXg@Lc@TwBPiC?WPoAbA_EdBgGHOHU\\ZNB`BADGLa@~L`IR_AGEpA}GdATfBPPKrANn@Xz@h@\\`ADeA@oApA^jA\\vGjBrAFxO?rKB@mCrHF?^FPJBdDARFrB??zAdJ?@oA",
-          "source": "google_routes",
-          "from_slot": "day2.lunch",
           "to_slot": "day2.dinner",
-          "from": "Earls Kitchen + Bar",
-          "to": "Marko's Kitchen"
+          "from": "The Confluence Historic Site & Parkland",
+          "to": "The Continental Restaurant"
         }
       ],
       "totals": {
-        "km": 9.41,
-        "minutes": 131.3
+        "km": 7.56,
+        "minutes": 104.7
       },
       "optimized": true,
       "stop_order": [
         "day2.breakfast",
-        "day2.attraction1",
         "day2.lunch",
+        "day2.attraction1",
         "day2.dinner"
       ]
     }
   ],
   "budget": {
-    "projected": 360.0,
+    "projected": 460.0,
     "limit": 500.0,
-    "remaining": 140.0,
-    "status": "ok"
+    "remaining": 40.0,
+    "status": "warning"
   },
   "critic": {
     "verdict": "revise",
@@ -218,26 +218,14 @@
       {
         "slot": "day2.attraction1",
         "type": "travel",
-        "detail": "26.7 min exceeds the 25.0 min per-leg limit",
-        "suggestion": "Choose a closer verified venue."
-      },
-      {
-        "slot": "day2.lunch",
-        "type": "travel",
-        "detail": "26.9 min exceeds the 25.0 min per-leg limit",
+        "detail": "28.2 min exceeds the 25.0 min per-leg limit",
         "suggestion": "Choose a closer verified venue."
       },
       {
         "slot": "day2.dinner",
         "type": "travel",
-        "detail": "77.7 min exceeds the 25.0 min per-leg limit",
+        "detail": "53.0 min exceeds the 25.0 min per-leg limit",
         "suggestion": "Choose a closer verified venue."
-      },
-      {
-        "slot": "day2",
-        "type": "daily_travel",
-        "detail": "131.3 min of travel exceeds the 120.0 min daily limit",
-        "suggestion": "Drop or relocate a stop on this day."
       }
     ],
     "iteration": 2
@@ -251,8 +239,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.5,
-        "review_count": 3062,
+        "review_count": 3064,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "222 5 Ave SW #110, Calgary, AB T2P 0M5, Canada",
         "lat": 51.048928599999996,
         "lon": -114.06578449999999,
@@ -270,32 +259,13 @@
         "cuisine": "restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
-        "rating": 4.8,
-        "review_count": 673,
+        "rating": 4.7,
+        "review_count": 681,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "1002 9 St SW, Calgary, AB T2R 0B5, Canada",
         "lat": 51.043721,
         "lon": -114.0836927,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
-        "name": "Namo Cafe Bistro (Beltline)",
-        "cuisine": "brunch restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.8,
-        "review_count": 1185,
-        "area": "downtown Calgary",
-        "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
-        "lat": 51.0428989,
-        "lon": -114.0710603,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -311,8 +281,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.5,
-        "review_count": 1155,
+        "review_count": 1156,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "1006 17 Ave SW, Calgary, AB T2T 0A6, Canada",
         "lat": 51.0379717,
         "lon": -114.084665,
@@ -333,6 +304,7 @@
         "rating": 4.6,
         "review_count": 2988,
         "area": "downtown Calgary",
+        "neighborhood": "Bridgeland-Riverside",
         "address": "809 1 Ave NE, Calgary, AB T2E 0C2, Canada",
         "lat": 51.0531722,
         "lon": -114.0448694,
@@ -351,8 +323,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.7,
-        "review_count": 1079,
+        "review_count": 1080,
         "area": "downtown Calgary",
+        "neighborhood": "Northwest Calgary",
         "address": "2604 4 St NW, Calgary, AB T2M 3A1, Canada",
         "lat": 51.0753243,
         "lon": -114.0712729,
@@ -373,9 +346,31 @@
         "rating": 4.4,
         "review_count": 2579,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "1301 10 Ave SW, Calgary, AB T3C 0J4, Canada",
         "lat": 51.0440222,
         "lon": -114.0914861,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+        "name": "Namo Cafe Bistro (Beltline)",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 1191,
+        "area": "downtown Calgary",
+        "neighborhood": "Beltline",
+        "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
+        "lat": 51.0428989,
+        "lon": -114.0710603,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -393,6 +388,7 @@
         "rating": 4.4,
         "review_count": 439,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "444 7 Ave SW #150, Calgary, AB T2P 0X8, Canada",
         "lat": 51.046983399999995,
         "lon": -114.07090679999999,
@@ -415,6 +411,7 @@
         "rating": 4.7,
         "review_count": 26,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "Food Court, 325 8 Ave SW 366 3rd Floor, Calgary, AB T2P 4K1, Canada",
         "lat": 51.045457,
         "lon": -114.06943009999999,
@@ -433,8 +430,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.6,
-        "review_count": 909,
+        "review_count": 910,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "1327 1 St SW #6, Calgary, AB T2R 1C9, Canada",
         "lat": 51.040073299999996,
         "lon": -114.0662765,
@@ -453,8 +451,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4,
-        "review_count": 2433,
+        "review_count": 2439,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "101 9 Ave SW, Calgary, AB T2P 1J9, Canada",
         "lat": 51.0444351,
         "lon": -114.06325659999999,
@@ -473,8 +472,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.7,
-        "review_count": 4068,
+        "review_count": 4065,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "1209 1 St SW, Calgary, AB T2R 0V3, Canada",
         "lat": 51.0410718,
         "lon": -114.0659836,
@@ -495,29 +495,10 @@
         "rating": 4.4,
         "review_count": 1422,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "620 10 Ave SW #134, Calgary, AB T2R 1C3, Canada",
         "lat": 51.043861799999995,
         "lon": -114.0757173,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJw8f6O_pvcVMRxnC5S7NUr3I",
-        "name": "JOEY Eau Claire",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.8,
-        "review_count": 7590,
-        "area": "downtown Calgary",
-        "address": "208 Barclay Parade SW, Market #200, Calgary, AB T2P 4R5, Canada",
-        "lat": 51.052113,
-        "lon": -114.06928169999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -535,6 +516,7 @@
         "rating": 4.4,
         "review_count": 439,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "444 7 Ave SW #150, Calgary, AB T2P 0X8, Canada",
         "lat": 51.046983399999995,
         "lon": -114.07090679999999,
@@ -555,9 +537,31 @@
         "rating": 4.7,
         "review_count": 1410,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "308 4 Ave SW, Calgary, AB T2P 0H7, Canada",
         "lat": 51.049512199999995,
         "lon": -114.06843819999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJw8f6O_pvcVMRxnC5S7NUr3I",
+        "name": "JOEY Eau Claire",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 7596,
+        "area": "downtown Calgary",
+        "neighborhood": "Eau Claire",
+        "address": "208 Barclay Parade SW, Market #200, Calgary, AB T2P 4R5, Canada",
+        "lat": 51.052113,
+        "lon": -114.06928169999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -575,6 +579,7 @@
         "rating": 4.4,
         "review_count": 196,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "1000 7 Ave SW, Calgary, AB T2P 5L5, Canada",
         "lat": 51.0472658,
         "lon": -114.08415679999999,
@@ -596,6 +601,7 @@
         "rating": 4.4,
         "review_count": 447,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "833 4 Ave SW, Calgary, AB T2P 3T5, Canada",
         "lat": 51.049578,
         "lon": -114.08033839999999,
@@ -615,8 +621,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.4,
-        "review_count": 2289,
+        "review_count": 2288,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "730 17 Ave SW, Calgary, AB T2S 0B7, Canada",
         "lat": 51.038091599999994,
         "lon": -114.07865149999999,
@@ -636,8 +643,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.8,
-        "review_count": 1185,
+        "review_count": 1191,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
         "lat": 51.0428989,
         "lon": -114.0710603,
@@ -659,6 +667,7 @@
         "rating": 4.5,
         "review_count": 921,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "528 17 Ave SW, Calgary, AB T2S 0B1, Canada",
         "lat": 51.038018099999995,
         "lon": -114.0731076,
@@ -680,11 +689,33 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4,
-        "review_count": 2433,
+        "review_count": 2439,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "101 9 Ave SW, Calgary, AB T2P 1J9, Canada",
         "lat": 51.0444351,
         "lon": -114.06325659999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ046b7gRvcVMRJgVhSU7wolM",
+        "name": "Mille Restaurant & Cafe",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 196,
+        "area": "downtown Calgary",
+        "neighborhood": "Downtown",
+        "address": "1000 7 Ave SW, Calgary, AB T2P 5L5, Canada",
+        "lat": 51.0472658,
+        "lon": -114.08415679999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -702,6 +733,7 @@
         "rating": 4.4,
         "review_count": 1422,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "620 10 Ave SW #134, Calgary, AB T2R 1C3, Canada",
         "lat": 51.043861799999995,
         "lon": -114.0757173,
@@ -720,51 +752,12 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.7,
-        "review_count": 4068,
+        "review_count": 4065,
         "area": "downtown Calgary",
+        "neighborhood": "Beltline",
         "address": "1209 1 St SW, Calgary, AB T2R 0V3, Canada",
         "lat": 51.0410718,
         "lon": -114.0659836,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJ046b7gRvcVMRJgVhSU7wolM",
-        "name": "Mille Restaurant & Cafe",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.4,
-        "review_count": 196,
-        "area": "downtown Calgary",
-        "address": "1000 7 Ave SW, Calgary, AB T2P 5L5, Canada",
-        "lat": 51.0472658,
-        "lon": -114.08415679999999,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJ-3EWPftvcVMRYEELd3shKDA",
-        "name": "Caesar's Steak House & Lounge",
-        "cuisine": "steak house",
-        "price_level": 4,
-        "avg_meal_cost": 80.0,
-        "rating": 4.5,
-        "review_count": 2508,
-        "area": "downtown Calgary",
-        "address": "512 4 Ave SW, Calgary, AB T2P 0J7, Canada",
-        "lat": 51.049788899999996,
-        "lon": -114.07237219999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -780,11 +773,33 @@
         "price_level": 4,
         "avg_meal_cost": 80.0,
         "rating": 4,
-        "review_count": 493,
+        "review_count": 495,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "525 5 Ave SW 27th Floor, Calgary, AB T2P 1P7, Canada",
         "lat": 51.048559999999995,
         "lon": -114.07293999999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ-3EWPftvcVMRYEELd3shKDA",
+        "name": "Caesar's Steak House & Lounge",
+        "cuisine": "steak house",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.5,
+        "review_count": 2510,
+        "area": "downtown Calgary",
+        "neighborhood": "Downtown",
+        "address": "512 4 Ave SW, Calgary, AB T2P 0J7, Canada",
+        "lat": 51.049788899999996,
+        "lon": -114.07237219999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -800,8 +815,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.8,
-        "review_count": 7590,
+        "review_count": 7596,
         "area": "downtown Calgary",
+        "neighborhood": "Eau Claire",
         "address": "208 Barclay Parade SW, Market #200, Calgary, AB T2P 4R5, Canada",
         "lat": 51.052113,
         "lon": -114.06928169999999,
@@ -820,8 +836,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.7,
-        "review_count": 5715,
+        "review_count": 5714,
         "area": "downtown Calgary",
+        "neighborhood": "Downtown",
         "address": "8 Ave SW #315, Calgary, AB T2P 1C4, Canada",
         "lat": 51.0455173,
         "lon": -114.06929710000001,
@@ -836,17 +853,18 @@
     ],
     "day2.breakfast": [
       {
-        "venue_id": "ChIJ0eiLxu5vcVMR2Fso7VTZFmQ",
-        "name": "Red's Diner in Kensington",
-        "cuisine": "diner",
+        "venue_id": "ChIJYyMuOB1wcVMRqNLwBtvwsKo",
+        "name": "The Beltliner",
+        "cuisine": "restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
-        "rating": 4.5,
-        "review_count": 1469,
-        "area": "Kensington, Calgary",
-        "address": "286 10 St NW, Calgary, AB T2N 1V8, Canada",
-        "lat": 51.053883199999994,
-        "lon": -114.0857109,
+        "rating": 4.2,
+        "review_count": 1629,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "243 12 Ave SW, Calgary, AB T2R 1H7, Canada",
+        "lat": 51.041304499999995,
+        "lon": -114.06786369999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -856,17 +874,18 @@
         "source": "google_places"
       },
       {
-        "venue_id": "ChIJgbf2JFJlcVMR_ifc_6c-Ui8",
-        "name": "Blue Star Diner",
-        "cuisine": "diner",
+        "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+        "name": "Namo Cafe Bistro (Beltline)",
+        "cuisine": "brunch restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
-        "rating": 4.6,
-        "review_count": 2988,
-        "area": "Kensington, Calgary",
-        "address": "809 1 Ave NE, Calgary, AB T2E 0C2, Canada",
-        "lat": 51.0531722,
-        "lon": -114.0448694,
+        "rating": 4.8,
+        "review_count": 1191,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
+        "lat": 51.0428989,
+        "lon": -114.0710603,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -876,17 +895,60 @@
         "source": "google_places"
       },
       {
-        "venue_id": "ChIJWZ0-oktlcVMR3ajdB2SexnU",
-        "name": "Turca Breakfast House",
+        "venue_id": "ChIJBeHVLNxvcVMR69KZ450qwso",
+        "name": "Monki Breakfast Club & Bistro Beltline",
+        "cuisine": "breakfast restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.4,
+        "review_count": 2579,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "1301 10 Ave SW, Calgary, AB T3C 0J4, Canada",
+        "lat": 51.0440222,
+        "lon": -114.0914861,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJe95va99vcVMR8U-c0nnsVRc",
+        "name": "Galaxie Diner",
+        "cuisine": "diner",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 2250,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "1413 11 St SW, Calgary, AB T2R 1G7, Canada",
+        "lat": 51.0396807,
+        "lon": -114.0892653,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJBWZDOT1vcVMRXWZkDu4rK6c",
+        "name": "Monki Breakfast Club & Bistro Greenwich",
         "cuisine": "breakfast restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.7,
-        "review_count": 1079,
-        "area": "Kensington, Calgary",
-        "address": "2604 4 St NW, Calgary, AB T2M 3A1, Canada",
-        "lat": 51.0753243,
-        "lon": -114.0712729,
+        "review_count": 1189,
+        "area": "Beltline Calgary",
+        "neighborhood": "Greenwood - Greenbriar",
+        "address": "50 Greenbriar Dr NW Unit 130, Calgary, AB T3B 6M3, Canada",
+        "lat": 51.0886265,
+        "lon": -114.22104019999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -896,17 +958,18 @@
         "source": "google_places"
       },
       {
-        "venue_id": "ChIJn75U1P1lcVMRWr7yvXLyEhI",
-        "name": "Chocoberry London (Kensington)",
+        "venue_id": "ChIJP9WuX5hxcVMRVRdRQ9VTXkw",
+        "name": "Maven",
         "cuisine": "brunch restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.5,
-        "review_count": 399,
-        "area": "Kensington, Calgary",
-        "address": "201 10 St NW, Calgary, AB T2N 1V5, Canada",
-        "lat": 51.0527434,
-        "lon": -114.08639369999999,
+        "review_count": 1156,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "1006 17 Ave SW, Calgary, AB T2T 0A6, Canada",
+        "lat": 51.0379717,
+        "lon": -114.084665,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -923,7 +986,8 @@
         "avg_meal_cost": 30.0,
         "rating": 4.8,
         "review_count": 430,
-        "area": "Kensington, Calgary",
+        "area": "Beltline Calgary",
+        "neighborhood": "Bridgeland-Riverside",
         "address": "725 1 Ave NE, Calgary, AB T2E 0B7, Canada",
         "lat": 51.0531618,
         "lon": -114.04629329999999,
@@ -936,57 +1000,18 @@
         "source": "google_places"
       },
       {
-        "venue_id": "ChIJLZiuOelvcVMReNCL3msDfRo",
-        "name": "BROUHAHA / Breakfast,Brunch,Lunch",
-        "cuisine": "brunch restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.7,
-        "review_count": 933,
-        "area": "Kensington, Calgary",
-        "address": "609 14 St NW, Calgary, AB T2N 2A9, Canada",
-        "lat": 51.0570184,
-        "lon": -114.0950333,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJh8D4xA57cVMRhGyBOSnpgqI",
-        "name": "Rise N' Shine - Forest Lawn",
-        "cuisine": "breakfast restaurant",
+        "venue_id": "ChIJgbf2JFJlcVMR_ifc_6c-Ui8",
+        "name": "Blue Star Diner",
+        "cuisine": "diner",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.6,
-        "review_count": 761,
-        "area": "Kensington, Calgary",
-        "address": "2014 36 St SE, Calgary, AB T2B 0X8, Canada",
-        "lat": 51.0357711,
-        "lon": -113.9812331,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJBWZDOT1vcVMRXWZkDu4rK6c",
-        "name": "Monki Breakfast Club & Bistro Greenwich",
-        "cuisine": "breakfast restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.7,
-        "review_count": 1188,
-        "area": "Kensington, Calgary",
-        "address": "50 Greenbriar Dr NW Unit 130, Calgary, AB T3B 6M3, Canada",
-        "lat": 51.0886265,
-        "lon": -114.22104019999999,
+        "review_count": 2988,
+        "area": "Beltline Calgary",
+        "neighborhood": "Bridgeland-Riverside",
+        "address": "809 1 Ave NE, Calgary, AB T2E 0C2, Canada",
+        "lat": 51.0531722,
+        "lon": -114.0448694,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -998,305 +1023,18 @@
     ],
     "day2.lunch": [
       {
-        "venue_id": "ChIJH4fama5vcVMRpiE52zAfBEU",
-        "name": "The Continental Restaurant",
-        "cuisine": "french restaurant",
-        "price_level": 4,
-        "avg_meal_cost": 80.0,
-        "rating": 4.7,
-        "review_count": 267,
-        "area": "Kensington, Calgary",
-        "address": "1131 Kensington Rd NW, Calgary, AB T2N 3P4, Canada",
-        "lat": 51.0524013,
-        "lon": -114.0878077,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJjcrgTRBvcVMRqOYY2iNqtdI",
-        "name": "The Lodge Kitchen & Bar",
+        "venue_id": "ChIJNQnimdJxcVMRDbVM8SQuA64",
+        "name": "Central Restaurants - Calgary Beltline",
         "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.3,
-        "review_count": 312,
-        "area": "Kensington, Calgary",
-        "address": "1918 Kensington Rd NW, Calgary, AB T2N 3R5, Canada",
-        "lat": 51.0527868,
-        "lon": -114.10440179999999,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJ73DMr-lvcVMR0Y4SZr4zFNs",
-        "name": "Niko's Bistro",
-        "cuisine": "italian restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.5,
-        "review_count": 569,
-        "area": "Kensington, Calgary",
-        "address": "1241 Kensington Rd NW, Calgary, AB T2N 3P8, Canada",
-        "lat": 51.052412600000004,
-        "lon": -114.09128659999999,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": true
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJ1zKI_OhvcVMRMGWCgd4QwGI",
-        "name": "Pulcinella",
-        "cuisine": "pizza restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.3,
-        "review_count": 2120,
-        "area": "Kensington, Calgary",
-        "address": "1147 Kensington Crescent NW, Calgary, AB T2N 1X7, Canada",
-        "lat": 51.0522231,
-        "lon": -114.088827,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": true
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJVY2NHepvcVMR_bS_-AzZPrE",
-        "name": "Globefish Sushi Kensington",
-        "cuisine": "japanese restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.3,
-        "review_count": 928,
-        "area": "Kensington, Calgary",
-        "address": "332 14 St NW, Calgary, AB T2N 1Z7, Canada",
-        "lat": 51.054276,
-        "lon": -114.094307,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": true,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJu9AAFddxcVMRvFxH6Gtd6Aw",
-        "name": "Marko's Kitchen",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.8,
-        "review_count": 1023,
-        "area": "Kensington, Calgary",
-        "address": "5708 1st St SE #1, Calgary, AB T2H 2W9, Canada",
-        "lat": 51.0039558,
-        "lon": -114.06184390000001,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJM_0b1e5vcVMRSRG6DPY67cM",
-        "name": "Vero Bistro Moderne",
-        "cuisine": "bistro",
-        "price_level": 4,
-        "avg_meal_cost": 80.0,
-        "rating": 4.7,
-        "review_count": 906,
-        "area": "Kensington, Calgary",
-        "address": "209 10 St NW, Calgary, AB T2N 1V5, Canada",
-        "lat": 51.053106,
-        "lon": -114.0861085,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJJWgjBOlvcVMRYjS3a8QWQqY",
-        "name": "Original Joe's",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.5,
-        "review_count": 1450,
-        "area": "Kensington, Calgary",
-        "address": "1220 Kensington Rd NW Unit 100, Calgary, AB T2N 3P5, Canada",
-        "lat": 51.052673,
-        "lon": -114.0898758,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJ9WaiHhxvcVMR4YQwgQIbytI",
-        "name": "Owens Landing",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.7,
-        "review_count": 1410,
-        "area": "Kensington, Calgary",
-        "address": "308 4 Ave SW, Calgary, AB T2P 0H7, Canada",
-        "lat": 51.049512199999995,
-        "lon": -114.06843819999999,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 0.96
-      },
-      {
-        "venue_id": "ChIJrQBOsfxvcVMRxqFYqnfUCB0",
-        "name": "The Tastemarket Canadian Kitchen by SAIT",
-        "cuisine": "restaurant",
-        "price_level": 1,
-        "avg_meal_cost": 15.0,
-        "rating": 4.4,
-        "review_count": 439,
-        "area": "Kensington, Calgary",
-        "address": "444 7 Ave SW #150, Calgary, AB T2P 0X8, Canada",
-        "lat": 51.046983399999995,
-        "lon": -114.07090679999999,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 1.34
-      },
-      {
-        "venue_id": "ChIJkfUr1PxvcVMRF_ZsT5eSh7s",
-        "name": "Earls Kitchen + Bar",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.7,
-        "review_count": 5714,
-        "area": "Kensington, Calgary",
-        "address": "8 Ave SW #315, Calgary, AB T2P 1C4, Canada",
-        "lat": 51.0455173,
-        "lon": -114.06929710000001,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 1.57
-      },
-      {
-        "venue_id": "ChIJo7Pl2OhvcVMR-a8036GrLkE",
-        "name": "Kensington Pub",
-        "cuisine": "pub",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.5,
-        "review_count": 2005,
-        "area": "Kensington, Calgary",
-        "address": "207 10A St NW, Calgary, AB T2N 1W7, Canada",
-        "lat": 51.0528252,
-        "lon": -114.0875574,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 1.75
-      },
-      {
-        "venue_id": "ChIJieiEH-lvcVMRCfJeM7UsZNk",
-        "name": "Hayden Block Smoke & Whiskey",
-        "cuisine": "barbecue restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.6,
-        "review_count": 5176,
-        "area": "Kensington, Calgary",
-        "address": "1136 Kensington Rd NW, Calgary, AB T2N 3P3, Canada",
-        "lat": 51.0527217,
-        "lon": -114.0882254,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 1.81
-      },
-      {
-        "venue_id": "ChIJJbRA3uhvcVMRxX2w-M2n0k8",
-        "name": "Blanco Cantina",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.4,
-        "review_count": 1045,
-        "area": "Kensington, Calgary",
-        "address": "1140 Kensington Rd NW, Calgary, AB T2N 3P3, Canada",
-        "lat": 51.0527655,
-        "lon": -114.0884962,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 1.84
-      }
-    ],
-    "day2.dinner": [
-      {
-        "venue_id": "ChIJhVRp0vN7cVMRvwSfkA2L1LY",
-        "name": "SOT",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.4,
-        "review_count": 280,
-        "area": "Inglewood, Calgary",
-        "address": "1216 9 Ave SE, Calgary, AB T2G 0T1, Canada",
-        "lat": 51.042002,
-        "lon": -114.03574700000001,
+        "review_count": 1146,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "224 12 Ave SW #110, Calgary, AB T2R 0X5, Canada",
+        "lat": 51.0417968,
+        "lon": -114.0674313,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -1306,17 +1044,39 @@
         "source": "google_places"
       },
       {
-        "venue_id": "ChIJe-kxqq96cVMROYrOM8LiU6E",
-        "name": "The Eden",
-        "cuisine": "bistro",
+        "venue_id": "ChIJsYwX1AJwcVMRqbb6sDmfHlk",
+        "name": "Ten Foot Henry",
+        "cuisine": "restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.7,
-        "review_count": 670,
-        "area": "Inglewood, Calgary",
-        "address": "1219 9 Ave SE, Calgary, AB T2G 0S9, Canada",
-        "lat": 51.041610999999996,
-        "lon": -114.035557,
+        "review_count": 4065,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "1209 1 St SW, Calgary, AB T2R 0V3, Canada",
+        "lat": 51.0410718,
+        "lon": -114.0659836,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+        "name": "Namo Cafe Bistro (Beltline)",
+        "cuisine": "brunch restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.8,
+        "review_count": 1191,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
+        "lat": 51.0428989,
+        "lon": -114.0710603,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -1332,8 +1092,9 @@
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.8,
-        "review_count": 5220,
-        "area": "Inglewood, Calgary",
+        "review_count": 5225,
+        "area": "Beltline Calgary",
+        "neighborhood": "Southeast Calgary",
         "address": "1214 9 Ave SE, Calgary, AB T2G 0T1, Canada",
         "lat": 51.0419802,
         "lon": -114.0359245,
@@ -1346,180 +1107,360 @@
         "source": "google_places"
       },
       {
-        "venue_id": "ChIJu5AS_a56cVMRKKt-OFhTSZM",
-        "name": "The Nash Restaurant & Off Cut Bar",
+        "venue_id": "ChIJjRj6-B1xcVMRUSP_TMYEPPc",
+        "name": "Kama",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 630,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "211 11 Ave SW #211, Calgary, AB T2R 0C6, Canada",
+        "lat": 51.042336999999996,
+        "lon": -114.06717499999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJbdE12FpvcVMR3aDH41WxWGw",
+        "name": "Orchard Restaurant",
+        "cuisine": "mediterranean restaurant",
+        "price_level": 3,
+        "avg_meal_cost": 50.0,
+        "rating": 4.4,
+        "review_count": 1422,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "620 10 Ave SW #134, Calgary, AB T2R 1C3, Canada",
+        "lat": 51.043861799999995,
+        "lon": -114.0757173,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJFUI8ZABvcVMRZBTeYe9fr3g",
+        "name": "Ryuko Beltline - Japanese Kitchen + Bar",
+        "cuisine": "japanese restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.7,
+        "review_count": 405,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "1004 14 St SW, Calgary, AB T3C 3Y9, Canada",
+        "lat": 51.043866099999995,
+        "lon": -114.09448689999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": true,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ2cyZoflxcVMRkQYbBu5Eawc",
+        "name": "The District at Beltline",
+        "cuisine": "food court",
+        "price_level": 1,
+        "avg_meal_cost": 15.0,
+        "rating": 4.4,
+        "review_count": 105,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "227 11 Ave SW, Calgary, AB T2R 1R9, Canada",
+        "lat": 51.0422624,
+        "lon": -114.06759040000001,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJf4z9Ux1wcVMR77dox-wkQn8",
+        "name": "Vintage Chophouse and Tavern",
+        "cuisine": "steak house",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.6,
+        "review_count": 2328,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "320 11 Ave SW, Calgary, AB T2R 1R4, Canada",
+        "lat": 51.042677999999995,
+        "lon": -114.068379,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.26
+      },
+      {
+        "venue_id": "ChIJp16d4KJxcVMRmS4q8r0iIps",
+        "name": "Bar Chouette",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 227,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "227 11 Ave SW #130, Calgary, AB T2R 1R9, Canada",
+        "lat": 51.041825599999996,
+        "lon": -114.06793549999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.35
+      },
+      {
+        "venue_id": "ChIJYyMuOB1wcVMRqNLwBtvwsKo",
+        "name": "The Beltliner",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.2,
+        "review_count": 1629,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "243 12 Ave SW, Calgary, AB T2R 1H7, Canada",
+        "lat": 51.041304499999995,
+        "lon": -114.06786369999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 0.4
+      },
+      {
+        "venue_id": "ChIJVVWFoQJwcVMR7_1KLrVNZ2w",
+        "name": "Salt & Brick - Calgary",
         "cuisine": "restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.5,
-        "review_count": 1694,
-        "area": "Inglewood, Calgary",
-        "address": "925 11 St SE, Calgary, AB T2G 0R4, Canada",
-        "lat": 51.0414374,
-        "lon": -114.03697539999999,
+        "review_count": 636,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "211 10 Ave SW, Calgary, AB T2R 0A4, Canada",
+        "lat": 51.0431854,
+        "lon": -114.0663809,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
           "gluten_risk": false
         },
         "verify_with_restaurant": true,
-        "source": "google_places"
-      },
+        "source": "google_places",
+        "distance_km": 0.46
+      }
+    ],
+    "day2.dinner": [
       {
-        "venue_id": "ChIJsUjswKt6cVMRJCDpcQ0QWAU",
-        "name": "Deane House",
+        "venue_id": "ChIJsYwX1AJwcVMRqbb6sDmfHlk",
+        "name": "Ten Foot Henry",
         "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.4,
-        "review_count": 1080,
-        "area": "Inglewood, Calgary",
-        "address": "806 9 Ave SE, Calgary, AB T2G 5E1, Canada",
-        "lat": 51.043789999999994,
-        "lon": -114.042036,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJlzBpy696cVMRnBT-aB8Kwzw",
-        "name": "Rouge",
-        "cuisine": "restaurant",
-        "price_level": 4,
-        "avg_meal_cost": 80.0,
-        "rating": 4.6,
-        "review_count": 771,
-        "area": "Inglewood, Calgary",
-        "address": "1240 8 Ave SE, Calgary, AB T2G 0M7, Canada",
-        "lat": 51.0422794,
-        "lon": -114.03362779999999,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJUXy4I9d6cVMRwkvMAZMSSiQ",
-        "name": "Safari Grill",
-        "cuisine": "restaurant",
-        "price_level": 2,
-        "avg_meal_cost": 30.0,
-        "rating": 4.4,
-        "review_count": 699,
-        "area": "Inglewood, Calgary",
-        "address": "255 28 St SE #100, Calgary, AB T2A 5K4, Canada",
-        "lat": 51.0499614,
-        "lon": -113.9930064,
-        "dietary_flags": {
-          "peanut_risk": false,
-          "shellfish_risk": false,
-          "gluten_risk": false
-        },
-        "verify_with_restaurant": true,
-        "source": "google_places"
-      },
-      {
-        "venue_id": "ChIJK_q-RZN7cVMRSes9tfZHOWg",
-        "name": "L'Olivo Cicchetti & Lounge",
-        "cuisine": "italian restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.7,
-        "review_count": 155,
-        "area": "Inglewood, Calgary",
-        "address": "1023 9 Ave SE, Calgary, AB T2G 0S7, Canada",
-        "lat": 51.042273400000006,
-        "lon": -114.0382757,
+        "review_count": 4065,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "1209 1 St SW, Calgary, AB T2R 0V3, Canada",
+        "lat": 51.0410718,
+        "lon": -114.0659836,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
-          "gluten_risk": true
+          "gluten_risk": false
         },
         "verify_with_restaurant": true,
         "source": "google_places"
       },
       {
-        "venue_id": "ChIJu9AAFddxcVMRvFxH6Gtd6Aw",
-        "name": "Marko's Kitchen",
+        "venue_id": "ChIJNQnimdJxcVMRDbVM8SQuA64",
+        "name": "Central Restaurants - Calgary Beltline",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.6,
+        "review_count": 1146,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "224 12 Ave SW #110, Calgary, AB T2R 0X5, Canada",
+        "lat": 51.0417968,
+        "lon": -114.0674313,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJ0YMDwrVvcVMRGagzsR8CDAQ",
+        "name": "bul Dining Room & Bar",
         "cuisine": "restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.8,
-        "review_count": 1023,
-        "area": "Inglewood, Calgary",
-        "address": "5708 1st St SE #1, Calgary, AB T2H 2W9, Canada",
-        "lat": 51.0039558,
-        "lon": -114.06184390000001,
+        "review_count": 1209,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "1244 17 Ave SW, Calgary, AB T2T 0B8, Canada",
+        "lat": 51.037975499999995,
+        "lon": -114.09116449999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
           "gluten_risk": false
         },
         "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 0.0
+        "source": "google_places"
       },
       {
-        "venue_id": "ChIJmyopa1hwcVMRGM7hPwIc854",
-        "name": "Prairie Dog Brewing",
-        "cuisine": "barbecue restaurant",
+        "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+        "name": "Namo Cafe Bistro (Beltline)",
+        "cuisine": "brunch restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
-        "rating": 4.3,
-        "review_count": 3005,
-        "area": "Inglewood, Calgary",
-        "address": "105D 58 Ave SE, Calgary, AB T2H 0N8, Canada",
-        "lat": 51.0009777,
-        "lon": -114.06338079999999,
+        "rating": 4.8,
+        "review_count": 1191,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
+        "lat": 51.0428989,
+        "lon": -114.0710603,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
           "gluten_risk": false
         },
         "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 0.49
+        "source": "google_places"
       },
       {
-        "venue_id": "ChIJI5QiZEVwcVMRgjcdwtPuhPo",
-        "name": "Subway",
-        "cuisine": "sandwich shop",
-        "price_level": 1,
-        "avg_meal_cost": 15.0,
-        "rating": 4.4,
-        "review_count": 341,
-        "area": "Inglewood, Calgary",
-        "address": "429 58 Ave SE, Calgary, AB T2H 0P5, Canada",
-        "lat": 51.0010991,
-        "lon": -114.0548604,
+        "venue_id": "ChIJVVWFoQJwcVMR7_1KLrVNZ2w",
+        "name": "Salt & Brick - Calgary",
+        "cuisine": "restaurant",
+        "price_level": 2,
+        "avg_meal_cost": 30.0,
+        "rating": 4.5,
+        "review_count": 636,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "211 10 Ave SW, Calgary, AB T2R 0A4, Canada",
+        "lat": 51.0431854,
+        "lon": -114.0663809,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
           "gluten_risk": false
         },
         "verify_with_restaurant": true,
-        "source": "google_places",
-        "distance_km": 0.82
+        "source": "google_places"
       },
       {
-        "venue_id": "ChIJxQS2v4t6cVMRWRfILl8UYyU",
-        "name": "Jane Bond BBQ",
-        "cuisine": "barbecue restaurant",
+        "venue_id": "ChIJjRj6-B1xcVMRUSP_TMYEPPc",
+        "name": "Kama",
+        "cuisine": "restaurant",
         "price_level": 2,
         "avg_meal_cost": 30.0,
         "rating": 4.6,
-        "review_count": 3005,
-        "area": "Inglewood, Calgary",
-        "address": "723 46 Ave SE #321, Calgary, AB T2G 2A4, Canada",
-        "lat": 51.0105996,
-        "lon": -114.0465711,
+        "review_count": 630,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "211 11 Ave SW #211, Calgary, AB T2R 0C6, Canada",
+        "lat": 51.042336999999996,
+        "lon": -114.06717499999999,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJf4z9Ux1wcVMR77dox-wkQn8",
+        "name": "Vintage Chophouse and Tavern",
+        "cuisine": "steak house",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.6,
+        "review_count": 2328,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "320 11 Ave SW, Calgary, AB T2R 1R4, Canada",
+        "lat": 51.042677999999995,
+        "lon": -114.068379,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJbdE12FpvcVMR3aDH41WxWGw",
+        "name": "Orchard Restaurant",
+        "cuisine": "mediterranean restaurant",
+        "price_level": 3,
+        "avg_meal_cost": 50.0,
+        "rating": 4.4,
+        "review_count": 1422,
+        "area": "Beltline Calgary",
+        "neighborhood": "Beltline",
+        "address": "620 10 Ave SW #134, Calgary, AB T2R 1C3, Canada",
+        "lat": 51.043861799999995,
+        "lon": -114.0757173,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJbxo3i9dvcVMROdTGw4WmDFw",
+        "name": "The Wilde on 27",
+        "cuisine": "restaurant",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4,
+        "review_count": 495,
+        "area": "Beltline Calgary",
+        "neighborhood": "Downtown",
+        "address": "525 5 Ave SW 27th Floor, Calgary, AB T2P 1P7, Canada",
+        "lat": 51.048559999999995,
+        "lon": -114.07293999999999,
         "dietary_flags": {
           "peanut_risk": false,
           "shellfish_risk": false,
@@ -1527,7 +1468,29 @@
         },
         "verify_with_restaurant": true,
         "source": "google_places",
-        "distance_km": 1.82
+        "distance_km": 1.13
+      },
+      {
+        "venue_id": "ChIJH4fama5vcVMRpiE52zAfBEU",
+        "name": "The Continental Restaurant",
+        "cuisine": "french restaurant",
+        "price_level": 4,
+        "avg_meal_cost": 80.0,
+        "rating": 4.7,
+        "review_count": 268,
+        "area": "Beltline Calgary",
+        "neighborhood": "Northwest Calgary",
+        "address": "1131 Kensington Rd NW, Calgary, AB T2N 3P4, Canada",
+        "lat": 51.0524013,
+        "lon": -114.0878077,
+        "dietary_flags": {
+          "peanut_risk": false,
+          "shellfish_risk": false,
+          "gluten_risk": false
+        },
+        "verify_with_restaurant": true,
+        "source": "google_places",
+        "distance_km": 1.79
       }
     ],
     "day1.attraction1": [
@@ -1552,6 +1515,30 @@
         "visit_duration_min": 60,
         "lat": 51.0556,
         "lon": -114.07025329999999,
+        "kid_friendly": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJuRFbQg1xcVMROa2svlIsB4Y",
+        "name": "Heritage Park",
+        "category": "history museum",
+        "cost": 0.0,
+        "rating": 4.7,
+        "visit_duration_min": 60,
+        "lat": 50.9824547,
+        "lon": -114.1009544,
+        "kid_friendly": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJyaYiQKt6cVMRKqNT7NvmrEY",
+        "name": "The Confluence Historic Site & Parkland",
+        "category": "historical landmark",
+        "cost": 0.0,
+        "rating": 4.3,
+        "visit_duration_min": 60,
+        "lat": 51.044624999999996,
+        "lon": -114.04402999999999,
         "kid_friendly": true,
         "source": "google_places"
       }
@@ -1580,13 +1567,37 @@
         "lon": -114.07025329999999,
         "kid_friendly": true,
         "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJuRFbQg1xcVMROa2svlIsB4Y",
+        "name": "Heritage Park",
+        "category": "history museum",
+        "cost": 0.0,
+        "rating": 4.7,
+        "visit_duration_min": 60,
+        "lat": 50.9824547,
+        "lon": -114.1009544,
+        "kid_friendly": true,
+        "source": "google_places"
+      },
+      {
+        "venue_id": "ChIJyaYiQKt6cVMRKqNT7NvmrEY",
+        "name": "The Confluence Historic Site & Parkland",
+        "category": "historical landmark",
+        "cost": 0.0,
+        "rating": 4.3,
+        "visit_duration_min": 60,
+        "lat": 51.044624999999996,
+        "lon": -114.04402999999999,
+        "kid_friendly": true,
+        "source": "google_places"
       }
     ]
   },
   "trace": [
     {
       "agent": "restaurant",
-      "message": "day1.breakfast: chose Wafflato | Cafe & Lounge via google_places"
+      "message": "day1.breakfast: chose The Tastemarket Canadian Kitchen by SAIT via google_places"
     },
     {
       "agent": "restaurant",
@@ -1598,15 +1609,15 @@
     },
     {
       "agent": "restaurant",
-      "message": "day2.breakfast: chose Komorebi Brunch via google_places"
+      "message": "day2.breakfast: chose Namo Cafe Bistro (Beltline) via google_places"
     },
     {
       "agent": "restaurant",
-      "message": "day2.lunch: chose Marko's Kitchen via google_places"
+      "message": "day2.lunch: chose Mumbai Bites via google_places"
     },
     {
       "agent": "restaurant",
-      "message": "day2.dinner: chose Mumbai Bites via google_places"
+      "message": "day2.dinner: chose bul Dining Room & Bar via google_places"
     },
     {
       "agent": "attraction",
@@ -1617,29 +1628,41 @@
       "message": "day2.attraction1: Prince's Island Park"
     },
     {
+      "agent": "budget",
+      "message": "day1.breakfast: The Tastemarket Canadian Kitchen by SAIT -> Wafflato | Cafe & Lounge (rating 4.4 -> 4.7, $170 headroom)"
+    },
+    {
       "agent": "route",
       "message": "6 travel legs computed"
     },
     {
       "agent": "critic",
-      "message": "verdict=revise issues=7"
+      "message": "verdict=revise issues=6"
     },
     {
       "agent": "revise",
-      "message": "reselected slots: ['day1.breakfast', 'day1.lunch', 'day2', 'day2.attraction1', 'day2.breakfast', 'day2.dinner', 'day2.lunch']"
+      "message": "reselected slots: ['day1.lunch', 'day2', 'day2.attraction1', 'day2.breakfast', 'day2.dinner', 'day2.lunch']"
     },
     {
       "agent": "critic",
-      "message": "verdict=revise issues=4"
+      "message": "verdict=revise issues=2"
+    },
+    {
+      "agent": "enrich",
+      "message": "skipped reading reviews: 51s of the 60s budget already spent"
+    },
+    {
+      "agent": "enrich",
+      "message": "detailed 8 stops; 0 dish mention(s) verified against their source review"
     },
     {
       "agent": "ship",
-      "message": "SHIPPED WITH 4 UNRESOLVED ISSUES after 2 iterations"
+      "message": "SHIPPED WITH 2 UNRESOLVED ISSUES after 2 iterations"
     }
   ],
   "meta": {
     "tier": 2,
-    "elapsed_s": 48.23,
+    "elapsed_s": 51.5,
     "mock_llm": false,
     "data_backend": "live",
     "tool_backends": {
@@ -1647,40 +1670,973 @@
       "attractions": "google_places",
       "travel": "google_routes",
       "live_decision": "forced_live",
-      "fallback_events": 0
+      "fallback_events": 0,
+      "details": "google_places"
     },
     "latency_budget_s": 60,
     "unresolved_issues": [
       {
         "slot": "day2.attraction1",
         "type": "travel",
-        "detail": "26.7 min exceeds the 25.0 min per-leg limit",
-        "suggestion": "Choose a closer verified venue."
-      },
-      {
-        "slot": "day2.lunch",
-        "type": "travel",
-        "detail": "26.9 min exceeds the 25.0 min per-leg limit",
+        "detail": "28.2 min exceeds the 25.0 min per-leg limit",
         "suggestion": "Choose a closer verified venue."
       },
       {
         "slot": "day2.dinner",
         "type": "travel",
-        "detail": "77.7 min exceeds the 25.0 min per-leg limit",
+        "detail": "53.0 min exceeds the 25.0 min per-leg limit",
         "suggestion": "Choose a closer verified venue."
-      },
-      {
-        "slot": "day2",
-        "type": "daily_travel",
-        "detail": "131.3 min of travel exceeds the 120.0 min daily limit",
-        "suggestion": "Drop or relocate a stop on this day."
       }
     ],
-    "llm_calls": 25,
+    "quality_shortfall": [],
+    "backups": [
+      {
+        "slot": "day1.breakfast",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJgU0yeMBvcVMR__In07rjQjs",
+            "name": "Wafflato | Cafe & Lounge",
+            "rating": 4.7,
+            "review_count": 681,
+            "price_level": 2,
+            "cuisine": "restaurant",
+            "cost": 30.0,
+            "distance_km": null,
+            "source": "google_places"
+          },
+          "score": {
+            "total": 47.0,
+            "rating": 4.7,
+            "rating_points": 47.0,
+            "travel_minutes": null,
+            "distance_penalty": 0.0,
+            "cost": 60.0,
+            "budget_remaining": 83.33,
+            "affordable": true
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJWZ0-oktlcVMR3ajdB2SexnU",
+              "name": "Turca Breakfast House",
+              "rating": 4.7,
+              "review_count": 1080,
+              "price_level": 2,
+              "cuisine": "breakfast restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 47.0,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": null,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJgbf2JFJlcVMR_ifc_6c-Ui8",
+              "name": "Blue Star Diner",
+              "rating": 4.6,
+              "review_count": 2988,
+              "price_level": 2,
+              "cuisine": "diner",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 46.0,
+              "rating": 4.6,
+              "rating_points": 46.0,
+              "travel_minutes": null,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 8
+      },
+      {
+        "slot": "day1.lunch",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJWS0_QGVvcVMRgofZ_wvAPPM",
+            "name": "Namo Cafe Bistro (Beltline)",
+            "rating": 4.8,
+            "review_count": 1191,
+            "price_level": 2,
+            "cuisine": "brunch restaurant",
+            "cost": 30.0,
+            "distance_km": 1.24,
+            "source": "google_places"
+          },
+          "score": {
+            "total": 48.0,
+            "rating": 4.8,
+            "rating_points": 48.0,
+            "travel_minutes": 16.6,
+            "distance_penalty": 0.0,
+            "cost": 60.0,
+            "budget_remaining": 83.33,
+            "affordable": true
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJw8f6O_pvcVMRxnC5S7NUr3I",
+              "name": "JOEY Eau Claire",
+              "rating": 4.8,
+              "review_count": 7596,
+              "price_level": 2,
+              "cuisine": "restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 47.7,
+              "rating": 4.8,
+              "rating_points": 48.0,
+              "travel_minutes": 25.6,
+              "distance_penalty": 0.3,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJ9WaiHhxvcVMR4YQwgQIbytI",
+              "name": "Owens Landing",
+              "rating": 4.7,
+              "review_count": 1410,
+              "price_level": 2,
+              "cuisine": "restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 47.0,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": 23.3,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 13
+      },
+      {
+        "slot": "day1.dinner",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJsYwX1AJwcVMRqbb6sDmfHlk",
+            "name": "Ten Foot Henry",
+            "rating": 4.7,
+            "review_count": 4065,
+            "price_level": 2,
+            "cuisine": "restaurant",
+            "cost": 30.0,
+            "distance_km": null,
+            "source": "google_places"
+          },
+          "score": {
+            "total": 47.0,
+            "rating": 4.7,
+            "rating_points": 47.0,
+            "travel_minutes": 7.7,
+            "distance_penalty": 0.0,
+            "cost": 60.0,
+            "budget_remaining": 83.33,
+            "affordable": true
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJw8f6O_pvcVMRxnC5S7NUr3I",
+              "name": "JOEY Eau Claire",
+              "rating": 4.8,
+              "review_count": 7596,
+              "price_level": 2,
+              "cuisine": "restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 48.0,
+              "rating": 4.8,
+              "rating_points": 48.0,
+              "travel_minutes": 18.1,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJkfUr1PxvcVMRF_ZsT5eSh7s",
+              "name": "Earls Kitchen + Bar",
+              "rating": 4.7,
+              "review_count": 5714,
+              "price_level": 2,
+              "cuisine": "restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 47.0,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": 8.5,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 8
+      },
+      {
+        "slot": "day2.breakfast",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJe95va99vcVMR8U-c0nnsVRc",
+            "name": "Galaxie Diner",
+            "rating": 4.8,
+            "review_count": 2250,
+            "price_level": 2,
+            "cuisine": "diner",
+            "cost": 30.0,
+            "distance_km": null,
+            "source": "google_places"
+          },
+          "score": {
+            "total": 48.0,
+            "rating": 4.8,
+            "rating_points": 48.0,
+            "travel_minutes": null,
+            "distance_penalty": 0.0,
+            "cost": 60.0,
+            "budget_remaining": 83.33,
+            "affordable": true
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJX-gpm9plcVMRAuKqI9W6G8U",
+              "name": "Komorebi Brunch",
+              "rating": 4.8,
+              "review_count": 430,
+              "price_level": 2,
+              "cuisine": "brunch restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 48.0,
+              "rating": 4.8,
+              "rating_points": 48.0,
+              "travel_minutes": null,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJBWZDOT1vcVMRXWZkDu4rK6c",
+              "name": "Monki Breakfast Club & Bistro Greenwich",
+              "rating": 4.7,
+              "review_count": 1189,
+              "price_level": 2,
+              "cuisine": "breakfast restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 47.0,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": null,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 8
+      },
+      {
+        "slot": "day2.lunch",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJp16d4KJxcVMRmS4q8r0iIps",
+            "name": "Bar Chouette",
+            "rating": 4.6,
+            "review_count": 227,
+            "price_level": 2,
+            "cuisine": "restaurant",
+            "cost": 30.0,
+            "distance_km": 0.35,
+            "source": "google_places"
+          },
+          "score": {
+            "total": 44.4,
+            "rating": 4.6,
+            "rating_points": 46.0,
+            "travel_minutes": 28.2,
+            "distance_penalty": 1.6,
+            "cost": 60.0,
+            "budget_remaining": 83.33,
+            "affordable": true
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJFUI8ZABvcVMRZBTeYe9fr3g",
+              "name": "Ryuko Beltline - Japanese Kitchen + Bar",
+              "rating": 4.7,
+              "review_count": 405,
+              "price_level": 2,
+              "cuisine": "japanese restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 47.0,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": 11.0,
+              "distance_penalty": 0.0,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJNQnimdJxcVMRDbVM8SQuA64",
+              "name": "Central Restaurants - Calgary Beltline",
+              "rating": 4.6,
+              "review_count": 1146,
+              "price_level": 2,
+              "cuisine": "restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 44.1,
+              "rating": 4.6,
+              "rating_points": 46.0,
+              "travel_minutes": 28.8,
+              "distance_penalty": 1.9,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 12
+      },
+      {
+        "slot": "day2.dinner",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJH4fama5vcVMRpiE52zAfBEU",
+            "name": "The Continental Restaurant",
+            "rating": 4.7,
+            "review_count": 268,
+            "price_level": 4,
+            "cuisine": "french restaurant",
+            "cost": 80.0,
+            "distance_km": 1.79,
+            "source": "google_places"
+          },
+          "score": {
+            "total": -Infinity,
+            "rating": 4.7,
+            "rating_points": 47.0,
+            "travel_minutes": 59.4,
+            "distance_penalty": 17.2,
+            "cost": 160.0,
+            "budget_remaining": 83.33,
+            "affordable": false
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJjRj6-B1xcVMRUSP_TMYEPPc",
+              "name": "Kama",
+              "rating": 4.6,
+              "review_count": 630,
+              "price_level": 2,
+              "cuisine": "restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 43.2,
+              "rating": 4.6,
+              "rating_points": 46.0,
+              "travel_minutes": 30.6,
+              "distance_penalty": 2.8,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJNQnimdJxcVMRDbVM8SQuA64",
+              "name": "Central Restaurants - Calgary Beltline",
+              "rating": 4.6,
+              "review_count": 1146,
+              "price_level": 2,
+              "cuisine": "restaurant",
+              "cost": 30.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 42.95,
+              "rating": 4.6,
+              "rating_points": 46.0,
+              "travel_minutes": 31.1,
+              "distance_penalty": 3.1,
+              "cost": 60.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 10
+      },
+      {
+        "slot": "day1.attraction1",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJJzJsi_1vcVMRgZd7NwckWfE",
+            "name": "Calgary Tower",
+            "rating": 4.5,
+            "review_count": null,
+            "price_level": null,
+            "cuisine": null,
+            "cost": 0.0,
+            "distance_km": null,
+            "source": "google_places"
+          },
+          "score": {
+            "total": 45.0,
+            "rating": 4.5,
+            "rating_points": 45.0,
+            "travel_minutes": 10.8,
+            "distance_penalty": 0.0,
+            "cost": 0.0,
+            "budget_remaining": 83.33,
+            "affordable": true
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJpS1pyfBvcVMRR_gMg_K0K0Y",
+              "name": "Prince's Island Park",
+              "rating": 4.7,
+              "review_count": null,
+              "price_level": null,
+              "cuisine": null,
+              "cost": 0.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 46.3,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": 26.4,
+              "distance_penalty": 0.7,
+              "cost": 0.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJuRFbQg1xcVMROa2svlIsB4Y",
+              "name": "Heritage Park",
+              "rating": 4.7,
+              "review_count": null,
+              "price_level": null,
+              "cuisine": null,
+              "cost": 0.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": -6.200000000000003,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": 131.4,
+              "distance_penalty": 53.2,
+              "cost": 0.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 4
+      },
+      {
+        "slot": "day2.attraction1",
+        "chosen": {
+          "facts": {
+            "venue_id": "ChIJyaYiQKt6cVMRKqNT7NvmrEY",
+            "name": "The Confluence Historic Site & Parkland",
+            "rating": 4.3,
+            "review_count": null,
+            "price_level": null,
+            "cuisine": null,
+            "cost": 0.0,
+            "distance_km": null,
+            "source": "google_places"
+          },
+          "score": {
+            "total": 39.65,
+            "rating": 4.3,
+            "rating_points": 43.0,
+            "travel_minutes": 31.7,
+            "distance_penalty": 3.3,
+            "cost": 0.0,
+            "budget_remaining": 83.33,
+            "affordable": true
+          }
+        },
+        "alternatives": [
+          {
+            "facts": {
+              "venue_id": "ChIJpS1pyfBvcVMRR_gMg_K0K0Y",
+              "name": "Prince's Island Park",
+              "rating": 4.7,
+              "review_count": null,
+              "price_level": null,
+              "cuisine": null,
+              "cost": 0.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": 45.1,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": 28.8,
+              "distance_penalty": 1.9,
+              "cost": 0.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          },
+          {
+            "facts": {
+              "venue_id": "ChIJuRFbQg1xcVMROa2svlIsB4Y",
+              "name": "Heritage Park",
+              "rating": 4.7,
+              "review_count": null,
+              "price_level": null,
+              "cuisine": null,
+              "cost": 0.0,
+              "distance_km": null,
+              "source": "google_places"
+            },
+            "score": {
+              "total": -5.799999999999997,
+              "rating": 4.7,
+              "rating_points": 47.0,
+              "travel_minutes": 130.6,
+              "distance_penalty": 52.8,
+              "cost": 0.0,
+              "budget_remaining": 83.33,
+              "affordable": true
+            }
+          }
+        ],
+        "pool_size": 4
+      }
+    ],
+    "day_summary": [
+      {
+        "day": 1,
+        "stops": 4,
+        "cost": 180.0,
+        "travel_minutes": 31.9,
+        "travel_km": 2.29,
+        "average_rating": 4.67
+      },
+      {
+        "day": 2,
+        "stops": 4,
+        "cost": 280.0,
+        "travel_minutes": 104.7,
+        "travel_km": 7.56,
+        "average_rating": 4.6
+      }
+    ],
+    "enrichment": [
+      {
+        "slot": "day1.breakfast",
+        "facts": {
+          "name": "Wafflato | Cafe & Lounge",
+          "neighborhood": "Beltline",
+          "neighborhood_known": true,
+          "address": "1002 9 St SW, Calgary, AB T2R 0B5, Canada",
+          "rating": 4.7,
+          "review_count": 681,
+          "price_level": 2,
+          "cuisine": "restaurant",
+          "website": "http://wafflato.ca/",
+          "phone": "(403) 930-7917",
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 30.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Upgraded using the remaining budget.",
+          "reservation": {
+            "text": "Book via http://wafflato.ca/ or call (403) 930-7917.",
+            "grounded_in": [
+              "website",
+              "phone"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      },
+      {
+        "slot": "day1.lunch",
+        "facts": {
+          "name": "Namo Cafe Bistro (Beltline)",
+          "neighborhood": "Beltline",
+          "neighborhood_known": true,
+          "address": "396 11 Ave SW, Calgary, AB T2R 0C5, Canada",
+          "rating": 4.8,
+          "review_count": 1191,
+          "price_level": 2,
+          "cuisine": "brunch restaurant",
+          "website": "https://www.namocafebistro.com/",
+          "phone": "(403) 263-5872",
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 30.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Highest-rated venue in the search results (4.8 \u2605 across 1,191 reviews), well within the $40 budget at ~$30 avg per person, and confirmed peanut_risk: false \u2014 making it safe for your peanut allergy. Located in Calgary's vibrant Beltline neighbourhood, it offers a diverse international-leaning caf\u00e9-bistro menu ideal for a day-1 lunch. Note: sourced from Google Places with verify_with_restaurant=true, so confirming hours directly with the restaurant before visiting is advised.",
+          "reservation": {
+            "text": "Book via https://www.namocafebistro.com/ or call (403) 263-5872.",
+            "grounded_in": [
+              "website",
+              "phone"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      },
+      {
+        "slot": "day1.dinner",
+        "facts": {
+          "name": "Ten Foot Henry",
+          "neighborhood": "Beltline",
+          "neighborhood_known": true,
+          "address": "1209 1 St SW, Calgary, AB T2R 0V3, Canada",
+          "rating": 4.7,
+          "review_count": 4065,
+          "price_level": 2,
+          "cuisine": "restaurant",
+          "website": "http://tenfoothenry.com/",
+          "phone": "(403) 475-5537",
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 30.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Verified restaurant",
+          "reservation": {
+            "text": "Book via http://tenfoothenry.com/ or call (403) 475-5537.",
+            "grounded_in": [
+              "website",
+              "phone"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      },
+      {
+        "slot": "day2.breakfast",
+        "facts": {
+          "name": "Galaxie Diner",
+          "neighborhood": "Beltline",
+          "neighborhood_known": true,
+          "address": "1413 11 St SW, Calgary, AB T2R 1G7, Canada",
+          "rating": 4.8,
+          "review_count": 2250,
+          "price_level": 2,
+          "cuisine": "diner",
+          "website": "https://www.galaxiediner.ca/",
+          "phone": "(403) 228-0001",
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 30.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Verified replacement",
+          "reservation": {
+            "text": "Book via https://www.galaxiediner.ca/ or call (403) 228-0001.",
+            "grounded_in": [
+              "website",
+              "phone"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      },
+      {
+        "slot": "day2.lunch",
+        "facts": {
+          "name": "Bar Chouette",
+          "neighborhood": "Beltline",
+          "neighborhood_known": true,
+          "address": "227 11 Ave SW #130, Calgary, AB T2R 1R9, Canada",
+          "rating": 4.6,
+          "review_count": 227,
+          "price_level": 2,
+          "cuisine": "restaurant",
+          "website": "http://www.barchouette.ca/",
+          "phone": null,
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 30.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Verified replacement",
+          "reservation": {
+            "text": "Book via http://www.barchouette.ca/.",
+            "grounded_in": [
+              "website"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      },
+      {
+        "slot": "day2.dinner",
+        "facts": {
+          "name": "The Continental Restaurant",
+          "neighborhood": "Northwest Calgary",
+          "neighborhood_known": true,
+          "address": "1131 Kensington Rd NW, Calgary, AB T2N 3P4, Canada",
+          "rating": 4.7,
+          "review_count": 268,
+          "price_level": 4,
+          "cuisine": "french restaurant",
+          "website": "http://www.continentalyyc.ca/?utm_source=google&utm_medium=wix_google_business_profile&utm_campaign=4882682764254085885",
+          "phone": "(587) 319-6776",
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 80.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Top-rated venue in the results (4.7 stars, 268 reviews), confirmed peanut_risk: false so it is safe for your allergy. Its French-international cuisine fits the international preference, and while its avg_meal_cost of $80 is slightly above the $65 budget, it is the strongest overall fit from the available options \u2014 guests can manage cost by selecting \u00e0-la-carte items carefully. Note: verify_with_restaurant=true applies, so it is advisable to confirm current menu pricing and peanut protocols directly with the restaurant before visiting.",
+          "reservation": {
+            "text": "Book via http://www.continentalyyc.ca/?utm_source=google&utm_medium=wix_google_business_profile&utm_campaign=4882682764254085885 or call (587) 319-6776.",
+            "grounded_in": [
+              "website",
+              "phone"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      },
+      {
+        "slot": "day1.attraction1",
+        "facts": {
+          "name": "Calgary Tower",
+          "neighborhood": "Downtown",
+          "neighborhood_known": true,
+          "address": "101 9 Ave SW, Calgary, AB T2P 1J9, Canada",
+          "rating": 4.5,
+          "review_count": 11069,
+          "price_level": 2,
+          "cuisine": "tourist attraction",
+          "website": "https://www.calgarytower.com/",
+          "phone": "(403) 266-7171",
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 30.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Top verified attraction",
+          "reservation": {
+            "text": "Book via https://www.calgarytower.com/ or call (403) 266-7171.",
+            "grounded_in": [
+              "website",
+              "phone"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      },
+      {
+        "slot": "day2.attraction1",
+        "facts": {
+          "name": "The Confluence Historic Site & Parkland",
+          "neighborhood": "East Village",
+          "neighborhood_known": true,
+          "address": "750 9 Ave SE, Calgary, AB T2G 5E1, Canada",
+          "rating": 4.3,
+          "review_count": 2294,
+          "price_level": 2,
+          "cuisine": "historical landmark",
+          "website": "https://www.theconfluence.ca/",
+          "phone": "(587) 288-1406",
+          "source": "google_places",
+          "fetched_at": "2026-08-29T02:20:45+00:00",
+          "cost_per_person": {
+            "value": 30.0,
+            "basis": "price_band_estimate"
+          }
+        },
+        "comment": {
+          "why_selected": "Verified replacement attraction",
+          "reservation": {
+            "text": "Book via https://www.theconfluence.ca/ or call (587) 288-1406.",
+            "grounded_in": [
+              "website",
+              "phone"
+            ]
+          },
+          "dishes_mentioned_in_reviews": {
+            "dishes": [],
+            "review_count": 5,
+            "note": "Review text is available but no LLM was reachable to read it.",
+            "source": "google_reviews"
+          }
+        },
+        "unverifiable": {
+          "michelin": "Google Places exposes no Michelin field. Confirm against the Michelin Guide directly."
+        }
+      }
+    ],
+    "llm_fallback": null,
+    "llm_fallback_message": null,
+    "llm_calls": 23,
     "tokens": {
-      "llm_calls": 25,
-      "input_tokens": 63762,
-      "output_tokens": 6076
+      "llm_calls": 23,
+      "input_tokens": 58035,
+      "output_tokens": 6083
     }
   }
 }

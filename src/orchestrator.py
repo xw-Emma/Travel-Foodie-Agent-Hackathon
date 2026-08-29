@@ -200,19 +200,45 @@ def score_candidate(candidate: dict, *, budget_remaining: float, party_size: int
     limit. Fully deterministic: no randomness, so scripts/tier_diff.py stays a
     meaningful A/B.
     """
-    if candidate_cost(candidate, party_size) > budget_remaining:
-        return float("-inf")
-    score = float(candidate.get("rating") or 0) * 10.0
+    return score_breakdown(candidate, budget_remaining=budget_remaining,
+                           party_size=party_size, anchor=anchor,
+                           max_leg_minutes=max_leg_minutes, mode=mode)["total"]
+
+
+def score_breakdown(candidate: dict, *, budget_remaining: float, party_size: int,
+                    anchor: tuple[float, float] | None = None,
+                    max_leg_minutes: float = 25.0, mode: str = "walk") -> dict:
+    """The same score, itemised.
+
+    Exists so a ranking can show its working. "Here are two runners-up" is only
+    useful if it also says why they lost - an unexplained order is a black box,
+    which is the opposite of what the agent trace is for.
+    """
+    cost = candidate_cost(candidate, party_size)
+    affordable = cost <= budget_remaining
+    rating = float(candidate.get("rating") or 0)
+    rating_points = rating * 10.0
+    minutes = None
+    penalty = 0.0
     if anchor is not None and candidate.get("lat") is not None:
         km = haversine_km(anchor[0], anchor[1],
                           candidate["lat"], candidate["lon"])
         speed = MODE_SPEED_KMH.get((mode or "walk").lower(), MODE_SPEED_KMH["walk"])
-        minutes = km / speed * 60.0
+        minutes = round(km / speed * 60.0, 1)
         # Inside the limit costs nothing; beyond it each minute is worth more
         # than a 0.05 rating star, so a closer good venue beats a distant great
         # one without a cheap venue ever winning on price alone.
-        score -= max(0.0, minutes - max_leg_minutes) * 0.5
-    return score
+        penalty = max(0.0, minutes - max_leg_minutes) * 0.5
+    return {
+        "total": float("-inf") if not affordable else rating_points - penalty,
+        "rating": rating,
+        "rating_points": round(rating_points, 1),
+        "travel_minutes": minutes,
+        "distance_penalty": round(penalty, 1),
+        "cost": cost,
+        "budget_remaining": round(float(budget_remaining), 2),
+        "affordable": affordable,
+    }
 
 
 def best_candidate(candidates: list[dict], *, used: set[str],
@@ -1028,6 +1054,126 @@ async def _enrich_itinerary(st: TripState, client, started_at: float) -> list[di
     return enriched
 
 
+BACKUPS_PER_SLOT = 2
+
+
+def _slot_anchors(st: TripState) -> dict[str, tuple[float, float]]:
+    """Where each stop is reached FROM, for every leg - not only flagged ones."""
+    by_slot = {item.get("slot"): item for item in st.itinerary}
+    anchors: dict[str, tuple[float, float]] = {}
+    for route in st.routes:
+        origin = route.get("origin") or {}
+        for leg in route.get("legs", []):
+            source = by_slot.get(leg.get("from_slot"))
+            if source is None and origin.get("slot") == leg.get("from_slot"):
+                source = origin
+            if source and source.get("lat") is not None:
+                anchors[leg.get("to_slot")] = (source["lat"], source["lon"])
+    return anchors
+
+
+def _backup_facts(candidate: dict) -> dict:
+    """Search-level facts only.
+
+    Runners-up deliberately get NO details call. Details are ~280 ms each and
+    the Phase C cost rule is that they are fetched for the final picks alone;
+    two backups per slot would multiply that by three for venues nobody chose.
+    """
+    return {
+        "venue_id": candidate.get("venue_id"),
+        "name": candidate.get("name"),
+        "rating": candidate.get("rating"),
+        "review_count": candidate.get("review_count"),
+        "price_level": candidate.get("price_level"),
+        "cuisine": candidate.get("cuisine"),
+        "cost": candidate.get("avg_meal_cost", candidate.get("cost")),
+        "distance_km": candidate.get("distance_km"),
+        "source": candidate.get("source"),
+    }
+
+
+def _backups(st: TripState, request: dict, party_size: int) -> list[dict]:
+    """The runners-up for every slot, with the arithmetic that ranked them.
+
+    The pool is already in st.candidates and was simply being discarded by the
+    UI. Ranking reuses score_breakdown, so the alternatives are ordered by the
+    exact rule that chose the winner rather than by a second, different one.
+    """
+    days = int(request.get("days", 2))
+    allowance = _budget_per_person(request, days) * party_size
+    max_leg_minutes, _, _ = _travel_limits(request)
+    mode = str(request.get("transport_mode", "WALK")).lower()
+    anchors = _slot_anchors(st)
+    chosen_ids = {item.get("venue_id") for item in st.itinerary}
+    by_slot = {item.get("slot"): item for item in st.itinerary}
+
+    out = []
+    for slot, pool in st.candidates.items():
+        picked = by_slot.get(slot)
+        if not picked or not pool:
+            continue
+        anchor = anchors.get(slot)
+
+        def rank(candidate):
+            score = score_breakdown(candidate, budget_remaining=allowance,
+                                    party_size=party_size, anchor=anchor,
+                                    max_leg_minutes=max_leg_minutes, mode=mode)
+            # -inf is not valid JSON, and this travels over HTTP to the
+            # deployed UI. `affordable` already carries the meaning.
+            if score["total"] == float("-inf"):
+                score["total"] = None
+            return score
+
+        chosen = next((c for c in pool
+                       if c.get("venue_id") == picked.get("venue_id")), None)
+        # Scored once per candidate, not once per comparison: score_breakdown
+        # runs a haversine each time.
+        scored = [(c, rank(c)) for c in pool
+                  if c.get("venue_id") not in chosen_ids]
+        scored.sort(key=lambda pair: (-(pair[1]["total"] if pair[1]["affordable"]
+                                        else float("-inf")),
+                                      str(pair[0].get("venue_id"))))
+        alternatives = scored[:BACKUPS_PER_SLOT]
+        if not alternatives:
+            continue
+        out.append({
+            "slot": slot,
+            "chosen": {"facts": _backup_facts(chosen or picked),
+                       "score": rank(chosen) if chosen else None},
+            "alternatives": [{"facts": _backup_facts(c), "score": score}
+                             for c, score in alternatives],
+            "pool_size": len(pool),
+        })
+    return out
+
+
+def _day_summary(st: TripState, request: dict) -> list[dict]:
+    """One row per day: what it costs, how far it walks, how well it rates."""
+    ratings = {}
+    for pool in st.candidates.values():
+        for candidate in pool:
+            if candidate.get("rating") is not None:
+                ratings[candidate.get("venue_id")] = float(candidate["rating"])
+    totals = {route.get("day"): route.get("totals") or {} for route in st.routes}
+    summary = []
+    for day in range(1, int(request.get("days", 2)) + 1):
+        stops = [item for item in st.itinerary
+                 if _day_number(item.get("slot", "")) == day]
+        if not stops:
+            continue
+        scored = [ratings[item["venue_id"]] for item in stops
+                  if item.get("venue_id") in ratings]
+        summary.append({
+            "day": day,
+            "stops": len(stops),
+            "cost": round(sum(float(item.get("cost") or 0) for item in stops), 2),
+            "travel_minutes": float(totals.get(day, {}).get("minutes") or 0),
+            "travel_km": float(totals.get(day, {}).get("km") or 0),
+            "average_rating": round(sum(scored) / len(scored), 2) if scored else None,
+        })
+    return summary
+
+
 def _quality_shortfall(st: TripState, request: dict) -> list[dict]:
     """Stops that do not meet the stated rating / review thresholds.
 
@@ -1195,7 +1341,11 @@ async def _run_tier2_async(request: dict) -> TripState:
     for day in range(1, days + 1) if attractions_per_day else ():
         slot = f"day{day}.attraction1"
         attraction = attractions.get(slot)
-        st.candidates[slot] = search_attractions(request["city"], limit=2) if attraction else []
+        # Was limit=2, which both days consumed - leaving attractions with no
+        # runners-up at all while every meal slot had a dozen.
+        st.candidates[slot] = search_attractions(
+            request["city"], limit=_attraction_limit(days, attractions_per_day)
+        ) if attraction else []
         if attraction:
             st.itinerary.append({"slot": slot, "venue_id": attraction["venue_id"], "name": attraction["name"],
                                  "cost": round(attraction.get("cost", 0) * party_size, 2),
@@ -1309,6 +1459,8 @@ async def _run_tier2_async(request: dict) -> TripState:
                "latency_budget_s": config.LATENCY_BUDGET_S,
                "unresolved_issues": unresolved,
                "quality_shortfall": _quality_shortfall(st, request),
+               "backups": _backups(st, request, party_size),
+               "day_summary": _day_summary(st, request),
                "enrichment": enrichment,
                "llm_fallback": llm_fallback,
         "llm_fallback_message": llm_fallback_message,
