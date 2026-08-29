@@ -56,6 +56,17 @@ def _data_source(meta) -> str:
     return (meta.get("tool_backends") or {}).get("restaurants") or "unknown"
 
 
+def _restaurant_facts(meta):
+    """Enrichment for meal stops only.
+
+    The quality gate is a constraint on RESTAURANTS. Counting an attraction
+    against it fails the check for the wrong reason - a landmark rated 4.5 is
+    not a restaurant that missed a 4.8 floor.
+    """
+    return [entry.get("facts") or {} for entry in (meta.get("enrichment") or [])
+            if str(entry.get("slot", "")).split(".", 1)[-1] in MEALS]
+
+
 # --------------------------------------------------------------- checks
 def _check_meals(request, state, meta):
     wanted = [m for m in MEALS if m in set(request.get("meals") or MEALS)]
@@ -100,8 +111,8 @@ def _check_rating(request, state, meta):
     minimum = request.get("min_rating")
     if minimum is None:
         return _verdict("Minimum rating", "not requested", "-", NOT_REQUESTED)
-    ratings = [entry["facts"].get("rating") for entry in (meta.get("enrichment") or [])
-               if entry.get("facts", {}).get("rating") is not None]
+    ratings = [facts.get("rating") for facts in _restaurant_facts(meta)
+               if facts.get("rating") is not None]
     shortfall = [s for s in (meta.get("quality_shortfall") or [])
                  if "rating" in (s.get("detail") or "")]
     if shortfall:
@@ -114,7 +125,7 @@ def _check_rating(request, state, meta):
                         UNVERIFIABLE, _data_source(meta),
                         "no rating data was available for the chosen venues")
     return _verdict("Minimum rating", f">= {minimum}",
-                    f"{min(ratings)} - {max(ratings)} across {len(ratings)} stops",
+                    f"{min(ratings)} - {max(ratings)} across {len(ratings)} restaurants",
                     VERIFIED if min(ratings) >= float(minimum) else FAILED,
                     _data_source(meta), None, _fetched_at(meta))
 
@@ -123,9 +134,8 @@ def _check_reviews(request, state, meta):
     minimum = request.get("min_reviews")
     if minimum is None:
         return _verdict("Minimum review count", "not requested", "-", NOT_REQUESTED)
-    counts = [entry["facts"].get("review_count")
-              for entry in (meta.get("enrichment") or [])
-              if entry.get("facts", {}).get("review_count") is not None]
+    counts = [facts.get("review_count") for facts in _restaurant_facts(meta)
+              if facts.get("review_count") is not None]
     shortfall = [s for s in (meta.get("quality_shortfall") or [])
                  if "review" in (s.get("detail") or "")]
     if shortfall:
@@ -139,7 +149,7 @@ def _check_reviews(request, state, meta):
                         UNVERIFIABLE, _data_source(meta),
                         "no review-count data was available")
     return _verdict("Minimum review count", f">= {minimum}",
-                    f"{min(counts)} - {max(counts)} across {len(counts)} stops",
+                    f"{min(counts)} - {max(counts)} across {len(counts)} restaurants",
                     VERIFIED if min(counts) >= int(minimum) else FAILED,
                     _data_source(meta), None, _fetched_at(meta))
 
@@ -258,6 +268,24 @@ def _check_attractions(request, state, meta):
                     None if found >= expected else "not every day got one")
 
 
+def _check_extra_criteria(request, state, meta):
+    """Requirements the description asked for that no field can express.
+
+    A trip description routinely asks for things this planner has no data for -
+    a guide listing, "popular with locals", "no chains". Dropping them would
+    leave the panel silently claiming a clean sweep, so each one is listed as
+    unverifiable in its own words.
+    """
+    criteria = request.get("extra_criteria") or []
+    if not criteria:
+        return []
+    return [_verdict(f"“{str(criterion)[:80]}”", "as described",
+                     "cannot be checked", UNVERIFIABLE, None,
+                     "no data source in this planner can confirm this - it was "
+                     "carried over from your description so it is not forgotten")
+            for criterion in criteria]
+
+
 CHECKS = (_check_meals, _check_budget, _check_rating, _check_reviews,
           _check_allergens, _check_travel, _check_daily_travel,
           _check_opening_hours, _check_attractions, _check_duplicates,
@@ -274,6 +302,10 @@ def verify(request: dict, state: dict) -> dict:
         except Exception as exc:  # noqa: BLE001 - a broken check must not hide the rest
             verdicts.append(_verdict(check.__name__, "-", "-", UNVERIFIABLE, None,
                                      f"this check errored: {type(exc).__name__}"))
+    try:
+        verdicts.extend(_check_extra_criteria(request or {}, state, meta))
+    except Exception:  # noqa: BLE001
+        pass
     counts = {state_name: sum(1 for v in verdicts if v["state"] == state_name)
               for state_name in STATE_ORDER}
     checked = len(verdicts) - counts[NOT_REQUESTED]

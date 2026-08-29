@@ -4,8 +4,11 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from src import config, diagnostics
+from src.agents import intent
+from src.fuelix_client import FuelixClient
 from src.orchestrator import run_tier1, run_tier2
 from src.request_model import TripRequest
 
@@ -39,6 +42,33 @@ def diagnose(probe: bool = False, backend: str | None = None) -> dict[str, Any]:
     finally:
         if token is not None:
             config._backend_override.reset(token)
+
+
+class IntentRequest(BaseModel):
+    text: str = ""
+    data_backend: str = "auto"
+
+
+@app.post("/intent")
+def read_intent(body: IntentRequest) -> dict[str, Any]:
+    """Read a free-text description into a validated form draft.
+
+    Server-side so the deployed UI gets the same feature without the Fuel iX key
+    ever reaching a browser. Returns fields, plus everything it refused to use -
+    it never returns a venue, and the caller still confirms before planning.
+    """
+    token = config.set_backend_override(body.data_backend)
+    try:
+        client = None if config.MOCK_MODE else FuelixClient(timeout=30,
+                                                            max_retries=1)
+        draft = intent.extract(client, body.text, body.data_backend)
+    finally:
+        config._backend_override.reset(token)
+    # start_date is a date object; the wire needs a string.
+    fields = dict(draft.get("fields") or {})
+    if fields.get("start_date") is not None:
+        fields["start_date"] = str(fields["start_date"])
+    return {**draft, "fields": fields}
 
 
 @app.post("/plan")
