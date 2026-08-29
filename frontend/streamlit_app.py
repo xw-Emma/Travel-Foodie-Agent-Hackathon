@@ -89,17 +89,6 @@ with st.sidebar:
         _diagnostics.clear()
         st.rerun()
 
-def call_intent(text: str, backend: str) -> dict:
-    """Read a description through the backend, so no key reaches the browser."""
-    request = urllib.request.Request(
-        BACKEND_URL + "/intent",
-        data=json.dumps({"text": text, "data_backend": backend}).encode("utf-8"),
-        method="POST",
-        headers={**_auth_headers(), "User-Agent": "foodie-frontend/2.0"})
-    with urllib.request.urlopen(request, timeout=90) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
 def _city_options() -> list[str]:
     drafted = st.session_state.get("f_city")
     extra = [drafted] if drafted and drafted not in CITY_SUGGESTIONS else []
@@ -126,7 +115,11 @@ def _apply_draft(draft: dict) -> None:
               "budget_amount": "f_budget", "budget_basis": "f_basis",
               "transport_mode": "f_transport", "min_rating": "f_min_rating",
               "min_reviews": "f_min_reviews", "search_radius_km": "f_radius",
-              "max_leg_minutes": "f_max_leg", "days": "f_days"}
+              "max_leg_minutes": "f_max_leg", "days": "f_days",
+              # The starting point the conversation asked for has to land in
+              # the field the Route Agent reads, or answering the question
+              # changes nothing.
+              "origin_text": "f_origin"}
     for field, key in simple.items():
         if field in fields:
             st.session_state[key] = fields[field]
@@ -141,59 +134,98 @@ def _apply_draft(draft: dict) -> None:
     st.session_state["intent_criteria"] = draft.get("other_criteria") or []
 
 
-def render_intent_box(backend: str) -> None:
-    """Same two-step flow as the in-process UI: read, confirm, then plan."""
-    st.subheader("Describe your trip")
-    description = st.text_area(
-        "Description", height=110, key="intent_text",
-        label_visibility="collapsed",
-        placeholder="e.g. Full day in Lisbon, lunch and dinner only, about "
-                    "$100 per person, authentic Portuguese, rated 4.8+ with "
-                    "1000+ reviews, no chains.")
-    if st.button("Read this into the form", key="intent_go"):
-        try:
-            with st.spinner("Reading your description..."):
-                draft = call_intent(description, backend)
-        except Exception as exc:  # noqa: BLE001
-            st.error(f"Could not reach the backend: `{exc}`")
-            return
-        _apply_draft(draft)
-        st.session_state["intent_draft"] = draft
-        st.rerun()
+def call_chat(history: list[dict], feasibility, asked, backend: str) -> dict:
+    """One conversational turn through the backend, so no key reaches here."""
+    payload = {"history": history, "feasibility": feasibility,
+               "asked": sorted(asked or ()), "data_backend": backend}
+    request = urllib.request.Request(
+        BACKEND_URL + "/chat",
+        data=json.dumps(payload, default=str).encode("utf-8"), method="POST",
+        headers={**_auth_headers(), "User-Agent": "foodie-frontend/2.0"})
+    with urllib.request.urlopen(request, timeout=90) as response:
+        return json.loads(response.read().decode("utf-8"))
 
-    draft = st.session_state.get("intent_draft")
-    if not draft:
-        return
+
+def _draft_summary(draft: dict) -> None:
+    """What was understood, and what was thrown away."""
     fields = draft.get("fields") or {}
     if fields:
         st.success("Filled in: " + ", ".join(
-            f"**{k.replace('_', ' ')}** = {v}" for k, v in fields.items()),
-            icon=":material/edit_note:")
+            f"**{key.replace('_', ' ')}** = {value}"
+            for key, value in fields.items()), icon=":material/edit_note:")
     for note in draft.get("notes") or []:
         st.info(note)
     if draft.get("rejected"):
         dropped = "\n".join(
-            f"- `{r['field']}`"
-            + (f" = {r['value']}" if r.get("value") else "")
-            + f" — {r['reason']}"
-            for r in draft["rejected"])
+            f"- `{item.get('field')}`"
+            + (f" = {item['value']}" if item.get("value") else "")
+            + f" — {item.get('reason')}"
+            for item in draft["rejected"])
         st.warning(
             f"**Not used** — dropped rather than guessed at:\n\n{dropped}",
             icon=":material/filter_alt_off:")
     if draft.get("other_criteria"):
-        carried = "\n".join(f"- {c}" for c in draft["other_criteria"])
+        carried = "\n".join(f"- {item}" for item in draft["other_criteria"])
         st.info(
             "**Carried over but not checkable** — these appear in the "
             f"verification panel as unverifiable:\n\n{carried}",
             icon=":material/help:")
-    st.caption("Check the form below, change anything wrong, then press "
-               "Plan my trip. Nothing was searched yet.")
+
+
+def render_chat(backend: str) -> None:
+    """Same two-step flow as the in-process UI: it fills the form, you plan."""
+    st.subheader("Tell me about your trip")
+    history = st.session_state.setdefault("chat_history", [])
+    for turn in history:
+        with st.chat_message(turn["role"]):
+            st.markdown(turn["content"])
+
+    message = st.chat_input(
+        "e.g. Full day in Lisbon, lunch and dinner only, about $100 per "
+        "person, authentic Portuguese, rated 4.8+ with 1000+ reviews.",
+        key="chat_in")
+    if message:
+        history.append({"role": "user", "content": message})
+        last = st.session_state.get("last_state") or {}
+        feasibility = (last.get("meta") or {}).get("feasibility")
+        try:
+            with st.spinner("Reading what you said..."):
+                turn = call_chat(history, feasibility,
+                                 st.session_state.get("chat_asked"), backend)
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"Could not reach the backend: `{exc}`")
+            return
+        _apply_draft(turn)
+        st.session_state["intent_draft"] = turn
+        questions = turn.get("questions") or []
+        if questions:
+            reply = "\n\n".join(question["text"] for question in questions)
+            st.session_state["chat_asked"] = sorted(
+                set(st.session_state.get("chat_asked") or ()) |
+                {q["id"] for q in questions})
+        elif turn.get("fields"):
+            reply = ("That is everything I need. Check the details below and "
+                     "press **Plan my trip** - nothing has been searched yet.")
+        else:
+            reply = ("I could not read anything usable from that. Try naming "
+                     "the city, how long, and roughly what you want to spend.")
+        history.append({"role": "assistant", "content": reply})
+        st.rerun()
+
+    draft = st.session_state.get("intent_draft")
+    if draft:
+        _draft_summary(draft)
+    if history and st.button("Start over", key="chat_reset"):
+        for key in ("chat_history", "chat_asked", "intent_draft",
+                    "intent_criteria"):
+            st.session_state.pop(key, None)
+        st.rerun()
 
 
 st.title("Travel Foodie Agent")
 st.caption("Deployment UI — plans through the FastAPI backend")
 
-render_intent_box(backend)
+render_chat(backend)
 
 with st.expander("Fine-tune the details",
                  expanded="intent_draft" not in st.session_state):

@@ -32,7 +32,7 @@ ALLOWED_FIELDS = {
     "city", "days", "start_date", "meals", "budget_amount", "budget_basis",
     "party_size", "cuisines", "allergies", "attractions_wanted",
     "transport_mode", "min_rating", "min_reviews", "search_radius_km",
-    "max_leg_minutes", "other_criteria",
+    "max_leg_minutes", "other_criteria", "origin_text",
 }
 
 # Keys that would mean the model tried to choose for us. Called out by name in
@@ -61,7 +61,8 @@ def _schema_prompt(backend: str) -> str:
         ' "cuisines": [str], "allergies": [str], "attractions_wanted": bool|null,\n'
         ' "transport_mode": str|null, "min_rating": number|null,\n'
         ' "min_reviews": int|null, "search_radius_km": number|null,\n'
-        ' "max_leg_minutes": number|null, "other_criteria": [str]}\n\n'
+        ' "max_leg_minutes": number|null, "origin_text": str|null,\n'
+        ' "other_criteria": [str]}\n\n'
         f"meals must come from {list(MEAL_SLOTS)}.\n"
         f"allergies must come from {list(vocabulary.CANONICAL_ALLERGENS)}.\n"
         f"transport_mode must come from {list(vocabulary.TRANSPORT_MODES)}.\n"
@@ -71,6 +72,10 @@ def _schema_prompt(backend: str) -> str:
         "qualifier you cannot capture there ('authentic', 'where locals eat') "
         "goes to other_criteria, but the cuisine itself belongs in the field.\n"
         "city must be a CITY, never a country or region.\n"
+        "origin_text is where the traveller STARTS - a hotel, address or "
+        "landmark they named. It is never a restaurant and never somewhere to "
+        "eat; leave it null unless they said where they are staying or setting "
+        "off from.\n"
         "budget_basis says whether the amount is for the whole party or one "
         "person. Use null for anything the description does not state - do not "
         "guess.\n"
@@ -201,6 +206,17 @@ def validate(raw: dict, backend: str = "auto") -> dict:
 
     if isinstance(raw.get("attractions_wanted"), bool):
         fields["attractions_wanted"] = raw["attractions_wanted"]
+
+    # A free-text starting point. Deliberately NOT geocoded here: resolve_origin
+    # does that at plan time through the Places client, so this stays a plain
+    # string handled by the same validation path as everything else.
+    origin = str(raw.get("origin_text") or "").strip()
+    if origin:
+        if len(origin) > 200:
+            rejected.append({"field": "origin_text", "value": origin[:60],
+                             "reason": "too long to be an address or landmark"})
+        else:
+            fields["origin_text"] = origin
 
     criteria = [str(c).strip()[:MAX_CRITERION_CHARS]
                 for c in (raw.get("other_criteria") or []) if str(c).strip()]

@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from src import config, diagnostics
-from src.agents import intent
+from src.agents import conversation, intent
 from src.fuelix_client import FuelixClient
 from src.orchestrator import run_tier1, run_tier2
 from src.request_model import TripRequest
@@ -69,6 +69,34 @@ def read_intent(body: IntentRequest) -> dict[str, Any]:
     if fields.get("start_date") is not None:
         fields["start_date"] = str(fields["start_date"])
     return {**draft, "fields": fields}
+
+
+class ChatRequest(BaseModel):
+    history: list[dict] = []
+    feasibility: dict | None = None
+    asked: list[str] = []
+    data_backend: str = "auto"
+
+
+@app.post("/chat")
+def chat(body: ChatRequest) -> dict[str, Any]:
+    """One conversational turn: read what was said, then ask what is missing.
+
+    Server-side so the Fuel iX key never reaches a browser, same as /intent.
+    Returns fields and questions - never an itinerary and never a venue.
+    """
+    token = config.set_backend_override(body.data_backend)
+    try:
+        client = None if config.MOCK_MODE else FuelixClient(timeout=30,
+                                                            max_retries=1)
+        turn = conversation.next_turn(client, body.history, body.feasibility,
+                                      body.data_backend, set(body.asked))
+    finally:
+        config._backend_override.reset(token)
+    fields = dict(turn.get("fields") or {})
+    if fields.get("start_date") is not None:
+        fields["start_date"] = str(fields["start_date"])
+    return {**turn, "fields": fields}
 
 
 @app.post("/plan")

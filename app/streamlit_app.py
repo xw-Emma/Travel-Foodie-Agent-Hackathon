@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
 
 from app import ui_components as ui  # noqa: E402
 from src import config, diagnostics, verification, vocabulary  # noqa: E402
-from src.agents import intent  # noqa: E402
+from src.agents import conversation  # noqa: E402
 from src.fuelix_client import FuelixClient  # noqa: E402
 from src.orchestrator import run_tier1, run_tier2  # noqa: E402
 from src.request_model import Origin, TripRequest  # noqa: E402
@@ -122,7 +122,11 @@ def _apply_draft(draft: dict) -> None:
               "budget_amount": "f_budget", "budget_basis": "f_basis",
               "transport_mode": "f_transport", "min_rating": "f_min_rating",
               "min_reviews": "f_min_reviews", "search_radius_km": "f_radius",
-              "max_leg_minutes": "f_max_leg", "days": "f_days"}
+              "max_leg_minutes": "f_max_leg", "days": "f_days",
+              # The starting point the conversation asked for has to land in
+              # the field the Route Agent reads, or answering the question
+              # changes nothing.
+              "origin_text": "f_origin"}
     for field, key in simple.items():
         if field in fields:
             st.session_state[key] = fields[field]
@@ -137,33 +141,8 @@ def _apply_draft(draft: dict) -> None:
     st.session_state["intent_criteria"] = draft.get("other_criteria") or []
 
 
-def render_intent_box(backend: str) -> None:
-    """Read a description into the form - as a separate, confirmable step.
-
-    Deliberately outside the planning form and on its own button. Reading a
-    description and committing to a plan are different decisions, and you should
-    see what was understood - and what was thrown away - before anything is
-    searched.
-    """
-    st.subheader("Describe your trip")
-    description = st.text_area(
-        "Description", height=110, key="intent_text", label_visibility="collapsed",
-        placeholder="e.g. Full day in Lisbon, lunch and dinner only, about "
-                    "$100 per person, authentic Portuguese, rated 4.8+ with "
-                    "1000+ reviews, no chains.")
-    if st.button("Read this into the form", key="intent_go"):
-        client = None if config.MOCK_MODE else FuelixClient(timeout=30,
-                                                            max_retries=1)
-        with st.spinner("Reading your description..."):
-            draft = intent.extract(client, description, backend)
-        _apply_draft(draft)
-        st.session_state["intent_draft"] = draft
-        # Rerun so the widgets are built from the values just written.
-        st.rerun()
-
-    draft = st.session_state.get("intent_draft")
-    if not draft:
-        return
+def _draft_summary(draft: dict) -> None:
+    """What was understood, and what was thrown away. Shown every turn."""
     fields = draft.get("fields") or {}
     if fields:
         st.success("Filled in: " + ", ".join(
@@ -186,8 +165,69 @@ def render_intent_box(backend: str) -> None:
             "**Carried over but not checkable** — these appear in the "
             f"verification panel as unverifiable:\n\n{carried}",
             icon=":material/help:")
-    st.caption("Check the form below, change anything that is wrong, then "
-               "press Plan my trip. Nothing was searched yet.")
+
+
+def render_chat(backend: str) -> None:
+    """A conversation that fills the form. It never plans and never picks a venue.
+
+    Two decisions kept out of the model, deliberately: what is still missing
+    (a constraint check, so it lives in code) and whether a value is usable
+    (intent.validate, same path as Phase B). The model only reads sentences.
+
+    Nothing is searched here. Every turn updates the form below; planning stays
+    behind the button, which is the user's decision.
+    """
+    st.subheader("Tell me about your trip")
+    history = st.session_state.setdefault("chat_history", [])
+
+    for turn in history:
+        with st.chat_message(turn["role"]):
+            st.markdown(turn["content"])
+
+    message = st.chat_input(
+        "e.g. Full day in Lisbon, lunch and dinner only, about $100 per person, "
+        "authentic Portuguese, rated 4.8+ with 1000+ reviews, no chains.",
+        key="chat_in")
+    if message:
+        history.append({"role": "user", "content": message})
+        client = None if config.MOCK_MODE else FuelixClient(timeout=30,
+                                                            max_retries=1)
+        # Feasibility comes from the LAST plan, so asking about an impossible
+        # budget costs no extra search - it is something already measured.
+        last = st.session_state.get("last_state") or {}
+        feasibility = (last.get("meta") or {}).get("feasibility")
+        with st.spinner("Reading what you said..."):
+            turn = conversation.next_turn(
+                client, history, feasibility, backend,
+                asked=set(st.session_state.get("chat_asked") or ()))
+
+        _apply_draft(turn)
+        st.session_state["intent_draft"] = turn
+        questions = turn.get("questions") or []
+        if questions:
+            reply = "\n\n".join(q["text"] for q in questions)
+            st.session_state["chat_asked"] = sorted(
+                set(st.session_state.get("chat_asked") or ()) |
+                {q["id"] for q in questions})
+        elif turn.get("fields"):
+            reply = ("That is everything I need. Check the details below and "
+                     "press **Plan my trip** when you are happy — nothing has "
+                     "been searched yet.")
+        else:
+            reply = ("I could not read anything usable from that. Try naming "
+                     "the city, how long, and roughly what you want to spend.")
+        history.append({"role": "assistant", "content": reply})
+        # Rerun so the form widgets are rebuilt from what was just written.
+        st.rerun()
+
+    draft = st.session_state.get("intent_draft")
+    if draft:
+        _draft_summary(draft)
+    if history and st.button("Start over", key="chat_reset"):
+        for key in ("chat_history", "chat_asked", "intent_draft",
+                    "intent_criteria"):
+            st.session_state.pop(key, None)
+        st.rerun()
 
 
 # ------------------------------------------------------------------ sidebar
@@ -209,7 +249,7 @@ with st.sidebar:
 st.title("Travel Foodie Agent")
 st.caption("Plan, verify, and inspect a grounded itinerary")
 
-render_intent_box(backend)
+render_chat(backend)
 
 # --------------------------------------------------------------------- form
 # Everything lives in a form because Streamlit re-runs the whole script on every
