@@ -94,8 +94,14 @@ def _check_budget(request, state, meta):
     within = budget.get("status") != "exceeded"
     actual = f"${projected:,.2f} of ${limit:,.2f}"
     if not within:
+        # When preflight proved it unsatisfiable, say that instead of implying a
+        # better choice of venues existed.
+        report = meta.get("feasibility") or {}
+        reason = ("the plan costs more than the budget"
+                  if not (report.get("checked") and report.get("feasible") is False)
+                  else report.get("reason"))
         return _verdict("Total within budget", f"<= ${limit:,.2f}", actual, FAILED,
-                        _data_source(meta), "the plan costs more than the budget")
+                        _data_source(meta), reason)
     if _is_live(meta):
         # Google reports a price BAND, never a menu price. Calling this verified
         # would dress an estimate up as a checked fact.

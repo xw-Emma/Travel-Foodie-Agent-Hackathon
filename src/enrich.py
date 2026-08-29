@@ -117,7 +117,8 @@ def _blank(texts: list[str], note: str | None = None) -> dict:
             "source": "google_reviews"}
 
 
-def dishes_for_venues(client, venues: list[tuple[str, list[dict]]]) -> list[dict]:
+def dishes_for_venues(client, venues: list[tuple[str, list[dict]]],
+                      reason: str | None = None) -> list[dict]:
     """Dish names mentioned in Google reviews, for a whole itinerary at once.
 
     Deliberately NOT called "recommended dishes". The evidence is whatever
@@ -142,9 +143,12 @@ def dishes_for_venues(client, venues: list[tuple[str, list[dict]]]) -> list[dict
     if not usable:
         return results
     if client is None:
+        # `reason` distinguishes a deliberate skip from an outage. Reporting a
+        # time-budget skip as "no LLM was reachable" blames the gateway for a
+        # choice this code made.
         for index in usable:
-            results[index]["note"] = ("Review text is available but no LLM was "
-                                      "reachable to read it.")
+            results[index]["note"] = reason or (
+                "Review text is available but no LLM was reachable to read it.")
         return results
 
     # The one LLM result worth caching. Everywhere else a cached completion

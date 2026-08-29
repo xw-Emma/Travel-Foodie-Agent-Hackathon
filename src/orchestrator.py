@@ -15,7 +15,7 @@ import time
 import urllib.error
 from datetime import date
 
-from . import config, demo_mode, enrich
+from . import config, demo_mode, enrich, feasibility
 from .fuelix_client import (FuelixClient, FuelixError, parse_json_reply,
                             run_tool_loop)
 from .state import TripState, MEALS, TOOL_SCHEMAS, is_valid_slot, slot_ids
@@ -997,7 +997,13 @@ def _upgrade_within_budget(st: TripState, request: dict, party_size: int) -> boo
 # already used most of the latency budget, the facts are still gathered and the
 # review read is skipped with a note - a slow extra beats a plan that misses the
 # deadline, and silently dropping it would look like "no dishes were mentioned".
-ENRICH_LLM_DEADLINE_S = 32.0
+#
+# Measured: a live plan with a quality gate ran 45 s and one batched review call
+# adds ~7 s. At the old 32 s threshold the step was skipped on nearly every live
+# run, so the feature effectively never ran. Skipping the doomed revision loop
+# (see _revision_would_help) brings the plan back to ~31 s, and this leaves room
+# for the call while still guarding the 60 s budget.
+ENRICH_LLM_DEADLINE_S = 45.0
 
 
 async def _enrich_itinerary(st: TripState, client, started_at: float) -> list[dict]:
@@ -1035,7 +1041,13 @@ async def _enrich_itinerary(st: TripState, client, started_at: float) -> list[di
     if spent > ENRICH_LLM_DEADLINE_S:
         st.log("enrich", f"skipped reading reviews: {spent:.0f}s of the "
                          f"{config.LATENCY_BUDGET_S}s budget already spent")
-        dish_evidence = enrich.dishes_for_venues(None, venues)
+        # Say WHY it was skipped. Reusing the no-client path made the venue card
+        # claim "no LLM was reachable", which was untrue - the gateway was fine
+        # and we chose to skip. Same class of misreport as the Fuel iX message.
+        dish_evidence = enrich.dishes_for_venues(
+            None, venues,
+            reason=(f"Skipped to stay inside the {config.LATENCY_BUDGET_S}s "
+                    "latency budget - the reviews were fetched but not read."))
     else:
         try:
             dish_evidence = await asyncio.to_thread(
@@ -1172,6 +1184,26 @@ def _day_summary(st: TripState, request: dict) -> list[dict]:
             "average_rating": round(sum(scored) / len(scored), 2) if scored else None,
         })
     return summary
+
+
+def _revision_would_help(critic: dict, report: dict) -> bool:
+    """Whether re-selecting venues could possibly resolve what the Critic found.
+
+    It cannot when every issue is about budget AND preflight has proved the
+    cheapest qualifying plan already exceeds it: there is nothing cheaper in the
+    pool to move to. Measured, that dead loop cost about 14 s of a 60 s budget
+    and pushed the review-reading step past its deadline.
+
+    Deliberately narrow. Travel and opening-hours issues ARE fixable by
+    reselection, so a run with any of those keeps its full iterations - a
+    too-eager skip would quietly stop the loop that Phase 3 built to converge.
+    """
+    issues = critic.get("issues") or []
+    if not issues:
+        return False
+    if not (report.get("checked") and report.get("feasible") is False):
+        return True
+    return not all(issue.get("type") == "budget" for issue in issues)
 
 
 def _quality_shortfall(st: TripState, request: dict) -> list[dict]:
@@ -1355,6 +1387,15 @@ async def _run_tier2_async(request: dict) -> TripState:
     for slot, error in attraction_failures:
         st.log("attraction", f"{slot}: {type(error).__name__}: {error}")
 
+    # Before any revision: can these constraints be met at all? Pure arithmetic
+    # over pools already fetched, so it costs nothing and answers the question
+    # the user would otherwise only get from a 240%-over plan.
+    report = feasibility.preflight(request, st.candidates)
+    if report.get("checked") and not report.get("feasible"):
+        st.log("feasibility", report["reason"])
+        for suggestion in report["suggestions"]:
+            st.log("feasibility", f"option: {suggestion['text']}")
+
     if _repair_budget(st, request, party_size):
         st.log("budget", "repaired the plan to fit the budget")
     # Before the Critic, so any travel cost of an upgrade is still checked.
@@ -1379,6 +1420,12 @@ async def _run_tier2_async(request: dict) -> TripState:
         st.critic = critic
         st.log("critic", f"verdict={critic.get('verdict')} issues={len(critic.get('issues', []))}")
         if critic.get("verdict") != "revise" or not critic.get("issues") or iteration == config.CRITIC_MAX_ITERATIONS:
+            break
+        if not _revision_would_help(critic, report):
+            st.log("critic", "not revising: every issue is about budget, and the "
+                             "cheapest venues that satisfy the other constraints "
+                             "already cost more than the budget - reselecting "
+                             "cannot fix it")
             break
         revise_slots = {issue["slot"] for issue in critic["issues"]}
         anchors = _travel_anchors(st, critic)
@@ -1459,6 +1506,7 @@ async def _run_tier2_async(request: dict) -> TripState:
                "latency_budget_s": config.LATENCY_BUDGET_S,
                "unresolved_issues": unresolved,
                "quality_shortfall": _quality_shortfall(st, request),
+               "feasibility": report,
                "backups": _backups(st, request, party_size),
                "day_summary": _day_summary(st, request),
                "enrichment": enrichment,

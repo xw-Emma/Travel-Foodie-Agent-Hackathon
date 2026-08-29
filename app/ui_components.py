@@ -81,7 +81,17 @@ def render_banners(meta: dict, request: dict, budget: dict) -> None:
             f"resolve these within its revision limit:\n\n{lines}",
             icon=":material/warning:")
 
-    if str(budget.get("status")) == "exceeded":
+    # Shown BEFORE the over-budget banner: knowing the constraints cannot be met
+    # at all explains the overage, and generic advice ("shorten the trip") is
+    # worth less than the arithmetic that would actually make it fit.
+    report = meta.get("feasibility") or {}
+    if report.get("checked") and report.get("feasible") is False:
+        options = "\n".join(
+            f"- {item['text']}" for item in report.get("suggestions") or [])
+        st.error(
+            f"**These constraints cannot be met.** {report.get('reason', '')}\n\n"
+            f"{options}", icon=":material/block:")
+    elif str(budget.get("status")) == "exceeded":
         over = abs(float(budget.get("remaining") or 0))
         st.warning(
             f"**Over budget by ${over:,.2f}.** Raise the budget, reduce the "
