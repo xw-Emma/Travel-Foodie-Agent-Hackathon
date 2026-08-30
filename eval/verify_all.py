@@ -36,6 +36,7 @@ SUITES = [
     ("intent", "eval/verify_intent.py", True),
     ("conversation", "eval/verify_conversation.py", True),
     ("demo", "eval/verify_demo.py", True),
+    ("deploy", "eval/verify_deploy.py", False),
     ("acceptance-local", "eval/acceptance.py", False),
 ]
 

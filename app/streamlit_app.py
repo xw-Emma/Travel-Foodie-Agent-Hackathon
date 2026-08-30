@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app import ui_components as ui  # noqa: E402
-from src import config, diagnostics, verification, vocabulary  # noqa: E402
+from src import bootstrap, config, diagnostics, verification, vocabulary  # noqa: E402
 from src.agents import conversation  # noqa: E402
 from src.fuelix_client import FuelixClient  # noqa: E402
 from src.orchestrator import run_tier1, run_tier2  # noqa: E402
@@ -26,6 +26,17 @@ from src.tools import classify_city, resolve_origin  # noqa: E402
 
 st.set_page_config(page_title="Travel Foodie Agent",
                    page_icon=":material/restaurant:", layout="wide")
+
+
+@st.cache_resource
+def _seed_if_missing() -> tuple[bool, str]:
+    """Once per process, never per rerun. A hosted deploy has the CSVs but not
+    the database they build, and without it FOODIE_DATA_BACKEND=auto has
+    nothing to fall back to."""
+    return bootstrap.ensure_local_database()
+
+
+_DB_BOOTSTRAP = _seed_if_missing()
 
 CITY_SUGGESTIONS = ["Calgary", "Vancouver", "Montreal"]
 
@@ -250,6 +261,15 @@ with st.sidebar:
     probe = st.checkbox("Probe the Google APIs", value=False,
                         help="Makes two real calls. Leave off to avoid billing.")
     ui.render_diagnostics(_diagnostics(probe, backend))
+    # Only worth a line when something actually happened at startup. On a laptop
+    # the database is already there and this stays quiet; on a fresh deploy it
+    # is the difference between having an offline fallback and not.
+    _built, _bootstrap_message = _DB_BOOTSTRAP
+    if _built:
+        st.caption(f"Offline dataset: {_bootstrap_message}")
+    elif "already present" not in _bootstrap_message:
+        st.warning(f"No offline fallback: {_bootstrap_message}",
+                   icon=":material/warning:")
     if st.button("Refresh diagnostics", width="stretch"):
         _diagnostics.clear()
         st.rerun()

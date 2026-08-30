@@ -1043,6 +1043,84 @@ Your Google Maps key restriction changes once you deploy: requests now come from
 
 ---
 
+## 6C. Streamlit Community Cloud — the fastest path, and its four traps
+
+Cloud Run is the right target for a TELUS-internal app: private by default, keys in Secret Manager, region controllable. Community Cloud is the right target when you want a URL in fifteen minutes and do not mind that it is public. Both are gated on the **same** question as 6B — whether Fuel iX answers a request that did not come from the TELUS network — so **do 6C.0 before anything else**.
+
+### 6C.0 The gate, again
+
+Community Cloud runs on AWS. You have no VPC, no egress control and no static IP, so if Fuel iX refuses non-TELUS origins there is no workaround at this layer.
+
+The app will **not** crash if it is refused: `_describe_llm_failure()` catches it, logs the reason, and drops to the deterministic pipeline. That is the trap. You get a working-looking demo with **zero LLM calls** — no planner, no self-directed search, no critic judgement, no formatter. Everything that makes it an agent is gone and nothing on screen shouts about it.
+
+**How to check in one look:** open the **Agent trace** panel after a plan. If Fuel iX was refused there is a `planner:` line saying so. `llm_calls` in the raw state is the other tell — it should be 13–19 for a Tier 2 live run, not 0.
+
+If it is blocked: stop, record the finding for the kickoff, and demo locally with the Phase 7 warm cache. A deployment that cannot call the gateway is worse than no deployment.
+
+### 6C.1 Publish the branch the deploy button is looking at
+
+The "Unable to deploy — the app's code is not connected to a remote GitHub repository" dialog usually is not what it sounds like. Read the second half of it: *"publish the current branch."* Streamlit looks for **your current branch** on the remote, not for the repo.
+
+This repo's default branch is `master`. If your local branch is called something else, the remote has no branch of that name and the button reports the repo as unconnected:
+
+```
+git branch -vv          # * main 31f6424 [origin/master]   <- mismatch
+git ls-remote --heads origin
+```
+
+Fix it once by aligning the local name with the remote:
+
+```
+git branch -m main master
+git branch --set-upstream-to=origin/master master
+```
+
+`git push` now works with no arguments, and the `git push origin main:master` dance goes away.
+
+### 6C.2 Entry point — there is only one that works
+
+| File | Community Cloud |
+| :---- | :---- |
+| `app/streamlit_app.py` | ✅ single process, calls the orchestrator in-process |
+| `frontend/streamlit_app.py` | ❌ thin HTTP client; needs `app/api.py` running separately |
+
+Set **Main file path** to `app/streamlit_app.py`. Python 3.11+. `requirements.txt` is already at the repo root where the host looks for it.
+
+### 6C.3 Secrets — root level only
+
+Paste this into **Advanced settings → Secrets**:
+
+```
+FUELIX_API_KEY = "..."
+GOOGLE_MAPS_API_KEY = "..."
+FOODIE_DATA_BACKEND = "auto"
+FOODIE_CACHE = "on"
+```
+
+No code change is needed. Streamlit exposes **root-level** secrets as OS environment variables as well as through `st.secrets`, and `src/config.py` reads `os.environ`. Keys nested under a `[section]` are **not** exported as environment variables — put these at the top level or `config.py` will see an empty key and silently switch to `MOCK_MODE`.
+
+`.env` is gitignored and must stay that way. The repo is public.
+
+### 6C.4 The database that is not in the repo
+
+`data/foodie.sqlite` is gitignored because it is derived; `data/csv/` is the source of truth and is tracked. A deploy therefore starts with the CSVs and **no database**, and the local catalogue is not only the offline demo — it is what `FOODIE_DATA_BACKEND=auto` falls back to when Google is unreachable.
+
+`src/bootstrap.py` seeds it at startup when it is missing, from both entrypoints, and leaves an existing database strictly alone. Nothing to do — but if it ever fails, the sidebar says **"No offline fallback: …"** and `/health` carries `db_bootstrap`. `eval/verify_deploy.py` asserts the whole path, including that the rebuild is byte-identical.
+
+### 6C.5 It is public, and so is your billing
+
+A free Community Cloud app is public by default and this repo is public. Anyone with the URL can press **Plan my trip**, which spends **your Google Places quota** (billed) and your Fuel iX quota.
+
+- Restrict viewers by email in the app's settings — Community Cloud supports an allow-list.
+- Google Cloud Console → the Maps key → **Application restrictions**. An IP restriction set for laptop work will 403 from AWS. Use **None** plus a tight **API restriction** (Places API New + Routes only), and set a quota cap.
+- The runbook header says **TELUS Internal**. Putting the reference implementation on a public URL is a classification call — make it deliberately, not by clicking Deploy.
+
+### ✅ GATE 6C
+
+The app loads, a plan returns a full itinerary, the **Agent trace** shows `restaurant:` lines with `google_places`, and `llm_calls` is non-zero. If `llm_calls` is 0, Fuel iX is blocked — that is GATE 6C failing, and the answer is 6A.
+
+---
+
 # PHASE 7 — Demo-day insurance (45 min)
 
 Do all four. Each one has saved a hackathon demo before.

@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from src import config, diagnostics
+from src import bootstrap, config, diagnostics
 from src.agents import conversation, intent
 from src.fuelix_client import FuelixClient
 from src.orchestrator import run_tier1, run_tier2
@@ -14,12 +14,18 @@ from src.request_model import TripRequest
 
 app = FastAPI(title="Travel Foodie Agent API", version="1.0.0")
 
+# A container image built from the repo has data/csv/ but not the database they
+# seed - it is derived, so it is gitignored. Build it at startup or the auto
+# backend has no fallback to fall back TO.
+DB_BOOTSTRAP = bootstrap.ensure_local_database()
+
 
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {
         "ok": True,
         "db_exists": config.DB_PATH.exists(),
+        "db_bootstrap": DB_BOOTSTRAP[1],
         "fuelix_key_set": bool(config.FUELIX_API_KEY),
         "maps_key_set": bool(config.GOOGLE_MAPS_API_KEY),
         "mock_llm": config.MOCK_MODE,
