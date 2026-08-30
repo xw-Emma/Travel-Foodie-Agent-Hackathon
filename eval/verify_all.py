@@ -31,6 +31,7 @@ SUITES = [
     ("feasibility", "eval/verify_feasibility.py", True),
     ("panel", "eval/verify_panel.py", True),
     ("attractions", "eval/verify_attractions.py", True),
+    ("executor-agency", "eval/verify_executor_agency.py", False),
     ("fields", "eval/verify_fields.py", False),
     ("intent", "eval/verify_intent.py", True),
     ("conversation", "eval/verify_conversation.py", True),

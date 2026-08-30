@@ -279,42 +279,122 @@ def _pick_restaurant_with_tool_loop(
     mode = str(request.get("transport_mode", "WALK")).lower()
     trip_anchor, trip_radius = _search_area(request)
 
+    # On a revision this restricts the Places search to a circle around the
+    # previous stop, so the live path converges like the local one.
+    price_ceiling = _max_price_level(task["budget_per_person"])
+    radius_ceiling = _within_km(leg_minutes, mode) if anchor else trip_radius
+    searches: list[dict] = []
+    signatures: set[tuple] = set()
+
+    def _tighter_radius(requested) -> float | None:
+        if not isinstance(requested, (int, float)):
+            return radius_ceiling
+        if radius_ceiling is None:
+            return float(requested)
+        return min(float(requested), radius_ceiling)
+
     def search_for_task(**kwargs):
-        kwargs.update({
+        """A search the MODEL directs, under constraints the code enforces.
+
+        This is the one place in the pipeline where the model decides its own
+        tool use: it reads what came back and may search again with a different
+        strategy. So the arguments split in two. Strategy - which cuisine to
+        try, whether to keep the area hint, how tight a price ceiling, how many
+        rows - is the model's to choose. Constraints are not: the city, the
+        meal, the allergen exclusion, the quality floor and the search anchor
+        are re-applied here on every call whatever the model passed, and the
+        price and radius ceilings may only be tightened. A model that can widen
+        its own search is useful; one that can drop an allergy filter is
+        dangerous, and the difference is enforced here rather than asked for in
+        a prompt.
+        """
+        if len(searches) >= config.EXECUTOR_MAX_SEARCHES:
+            # Bound the API cost and the latency deterministically, whatever the
+            # model asks for. It still gets an answer: everything seen so far.
+            return observed_candidates
+        model_price = kwargs.get("price_level_max")
+        model_limit = kwargs.get("limit")
+        query = {
+            # Locked. Changing any of these changes the question, not the plan
+            # for answering it.
             "city": request["city"],
             "meal": task["meal"],
-            "area": task.get("area_hint") or None,
-            "cuisine": cuisine,
-            "price_level_max": _max_price_level(task["budget_per_person"]),
             "exclude_flags": exclude,
-            "limit": max(int(kwargs.get("limit") or 0), 8),
             "min_rating": request.get("min_rating"),
             "min_reviews": request.get("min_reviews"),
-            # On a revision this restricts the Places search to a circle around
-            # the previous stop, so the live path converges like the local one.
             "near": anchor or trip_anchor,
-            "within_km": (_within_km(leg_minutes, mode) if anchor else trip_radius),
-        })
-        rows = search_restaurants(**kwargs)
+            # The model's, when it named one; the task's default otherwise.
+            "area": (kwargs["area"] if "area" in kwargs
+                     else (task.get("area_hint") or None)),
+            "cuisine": kwargs["cuisine"] if "cuisine" in kwargs else cuisine,
+            # Clamped: tightenable, never loosenable.
+            "price_level_max": (min(int(model_price), price_ceiling)
+                                if isinstance(model_price, (int, float))
+                                else price_ceiling),
+            "within_km": _tighter_radius(kwargs.get("within_km")),
+            "limit": max(8, min(int(model_limit or 0), 20)),
+        }
+        # A repeat of a search already made is not a strategy, and measured live
+        # the model does sometimes ask for one. Serve what is already in hand
+        # rather than paying Google again for the same answer - and record it,
+        # because a round spent on nothing should be visible rather than look
+        # like a second opinion.
+        signature = (query["cuisine"], query["area"], query["price_level_max"],
+                     query["within_km"], query["limit"])
+        if signature in signatures:
+            searches.append({"cuisine": query["cuisine"], "area": query["area"],
+                             "price_level_max": query["price_level_max"],
+                             "results": len(observed_candidates),
+                             "repeat": True})
+            return observed_candidates
+        signatures.add(signature)
+        rows = search_restaurants(**query)
+        searches.append({"cuisine": query["cuisine"], "area": query["area"],
+                         "price_level_max": query["price_level_max"],
+                         "results": len(rows), "repeat": False})
         observed_candidates.extend(rows)
         return rows
 
     tool_impls["search_restaurants"] = search_for_task
 
+    max_searches = config.EXECUTOR_MAX_SEARCHES
+    retry_rule = (
+        f"If it does not - nothing came back, everything is over budget, or "
+        f"nothing matches the cuisine that was asked for - call "
+        f"search_restaurants AGAIN, and CHANGE something when you do: drop the "
+        f"cuisine, drop the area, or lower price_level_max. Repeating the same "
+        f"arguments returns the same rows and wastes the attempt. "
+        f"{max_searches} searches at most, and only search again if the first "
+        f"one genuinely fell short.\n"
+        if max_searches > 1 else "Call search_restaurants exactly once.\n")
     system = (config.PROMPTS_DIR / "restaurant.md").read_text(encoding="utf-8")
     user = (
         f"City: {request['city']}. Slot: {task['slot']} ({task['meal']}).\n"
         f"Budget per person: ${task['budget_per_person']:.2f}.\n"
         f"Cuisine: {cuisine or 'any'}. Allergies: {allergies}.\n"
-        "Call search_restaurants with these constraints, then choose ONE venue "
-        "from the tool response. Return STRICT JSON as an array with exactly one "
-        "object: [{\"venue_id\": str, \"name\": str, \"why_recommended\": str}]. "
-        "Never invent a venue or facts. Call search_restaurants exactly once; "
-        "do not call any other tool in this Tier 1 task."
+        "Call search_restaurants, then READ what came back and decide for "
+        "yourself whether it answers the brief.\n"
+        + retry_rule
+        + "The allergy exclusions, the rating floor and the search area are "
+        "applied for you on every search and cannot be relaxed by anything you "
+        "pass. Then choose ONE venue from what the tool returned. Return "
+        "STRICT JSON as an array with exactly one object: "
+        "[{\"venue_id\": str, \"name\": str, \"why_recommended\": str}]. "
+        "Never invent a venue or facts, and do not call any other tool."
     )
-    result = run_tool_loop(
-        client, config.MODEL_ROUTING["restaurant"], system, user,
-        tools=TOOL_SCHEMAS, tool_impls=tool_impls, max_rounds=3)
+    exhausted = False
+    try:
+        result = run_tool_loop(
+            client, config.MODEL_ROUTING["restaurant"], system, user,
+            tools=TOOL_SCHEMAS, tool_impls=tool_impls,
+            max_rounds=config.EXECUTOR_TOOL_ROUNDS)
+    except FuelixError:
+        # The model kept asking for tools past the bound. Everything it already
+        # searched is verified and still in hand, so fall through to the
+        # code-side pick rather than losing the slot - which is what raising
+        # here used to cost, and the cost rises once retries are allowed.
+        result = []
+        exhausted = True
     candidates = observed_candidates
     if not candidates and task.get("area_hint"):
         candidates = search_restaurants(
@@ -330,13 +410,24 @@ def _pick_restaurant_with_tool_loop(
     candidate_by_id = {item["venue_id"]: item for item in available}
     selected = candidate_by_id.get(selection.get("venue_id"))
     if selected is None:
+        # Two different reasons land here and they are not the same event. Say
+        # which one it was: reporting a round-limit stop as a bad model answer
+        # is the same class of misreport as blaming the gateway for a
+        # serialisation bug in our own prompt.
         selected = available[0]
-        why = "Selected from the verified tool results after an off-list model response."
+        why = ("Selected from the verified tool results after the executor "
+               f"used all {config.EXECUTOR_TOOL_ROUNDS} of its tool rounds."
+               if exhausted else
+               "Selected from the verified tool results after an off-list "
+               "model response.")
     else:
         why = selection.get("why_recommended") or selection.get("why") or (
             f"Selected by the restaurant executor from verified {selected['cuisine']} results."
         )
-    return {**selected, "why": why}, candidates
+    # Carried so the trace can show what the model actually decided to do. An
+    # agent that re-plans its own search is only worth having if you can see it
+    # happen; without this the second search is invisible.
+    return {**selected, "why": why, "search_trace": searches}, candidates
 
 
 def _format_with_llm(client: FuelixClient, st: TripState) -> str:
@@ -1396,6 +1487,17 @@ async def _run_tier2_async(request: dict) -> TripState:
                                  "lat": pick.get("lat"), "lon": pick.get("lon"),
                                  "source": pick.get("source"), "why": pick.get("why", "Verified restaurant")})
             st.log("restaurant", f"{slot}: chose {pick['name']} via {pick.get('source')}")
+            trace = [step for step in (pick.get("search_trace") or [])
+                     if not step.get("repeat")]
+            if len(trace) > 1:
+                steps = " then ".join(
+                    f"{step['cuisine'] or 'any cuisine'}"
+                    + (f" in {step['area']}" if step.get("area") else "")
+                    + f" -> {step['results']}"
+                    for step in trace)
+                st.log("restaurant",
+                       f"{slot}: the executor searched {len(trace)}x on its own "
+                       f"judgement: {steps}")
         else:
             st.log("restaurant", f"{slot}: failed; continued without this slot")
     for slot, error in failures:

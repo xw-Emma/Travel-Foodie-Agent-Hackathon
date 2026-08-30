@@ -114,3 +114,13 @@ PRICE_LEVEL_MEAL_COST = {0: 12.0, 1: 15.0, 2: 30.0, 3: 50.0, 4: 80.0}
 LATENCY_BUDGET_S = 60          # full itinerary must land under this
 CRITIC_MAX_ITERATIONS = 2      # bounded reflection loop (Tier 2)
 TOOL_LOOP_MAX_ROUNDS = 4       # per-agent tool-calling loop bound
+
+# The restaurant executor is the one place the model directs its own tool use:
+# it reads what a search returned and decides whether to search again with a
+# different strategy. Every extra round is one more serial LLM call - measured
+# at roughly 6-9 s across the concurrent slots - so the bound is a knob rather
+# than a constant. Set FOODIE_EXECUTOR_TOOL_ROUNDS=2 to go back to the single
+# forced search if a demo needs the latency back.
+EXECUTOR_TOOL_ROUNDS = max(2, int(os.environ.get("FOODIE_EXECUTOR_TOOL_ROUNDS", "3")))
+# One round is spent on the final answer, so the searches are the rest.
+EXECUTOR_MAX_SEARCHES = EXECUTOR_TOOL_ROUNDS - 1
